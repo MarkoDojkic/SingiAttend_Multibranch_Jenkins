@@ -29,14 +29,14 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Autowired
     public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
         auth.inMemoryAuthentication()
-                .withUser("singiattend-admin").password(passwordEncoder().encode("singiattend-server2021"))
+                .withUser("singiattend-admin")
+                .password(passwordEncoder().encode("singiattend-server2021"))
                 .authorities("singiattend");
     }
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.cors().and().csrf().disable().authorizeRequests().anyRequest()
-          .permitAll();
+        http.csrf().disable().authorizeRequests().anyRequest().authenticated().and().httpBasic().authenticationEntryPoint(myAuthenticationEntryPoint);
     }
 
     @Bean
@@ -55,7 +55,7 @@ class MyBasicAuthenticationEntryPoint extends BasicAuthenticationEntryPoint {
         response.addHeader("WWW-Authenticate", "Basic realm=\"" + getRealmName() + "\"");
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         PrintWriter writer = response.getWriter();
-        writer.println("HTTP Status 401 - " + authEx.getMessage());
+        writer.println("HTTP Status 403 - " + authEx.getMessage());
     }
 
     @Override
