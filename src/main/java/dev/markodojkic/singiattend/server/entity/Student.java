@@ -3,6 +3,8 @@ package dev.markodojkic.singiattend.server.entity;
 import lombok.Data;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
+import org.springframework.data.mongodb.core.mapping.FieldType;
+import org.springframework.data.mongodb.core.mapping.MongoId;
 
 import javax.persistence.*;
 import java.util.ArrayList;
@@ -20,7 +22,7 @@ public class Student {
     private String password_hash;
     @Field("email")
     private String email;
-    @Field("study_id")
+    @Field(targetType = FieldType.OBJECT_ID, value = "study_id")
     private String studyId;
     @Field("year")
     private String year;
