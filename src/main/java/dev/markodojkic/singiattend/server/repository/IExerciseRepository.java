@@ -6,7 +6,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 
 public interface IExerciseRepository extends MongoRepository<Exercise, String> {
-    @Aggregation(pipeline={"{ $addFields: { ended_at: { $toDate: '$ended_at' } } }", "{ $sort: { ended_at: -1 } }", "{ $match: { subject_id: ObjectId(?0) } }, { $limit: 1 }"})
+    @Aggregation(pipeline={"{ $sort: { ended_at: -1 } }", "{ $match: { subject_id: ?0 } }, { $limit: 1 }"})
     Exercise getLast(String subjectId);
     /*@Query(value="{'subject_id': {$regex : ?0, $options: 'i'}}")
     List<Exercise> getAllBySubject(String subjectId);*/

@@ -6,7 +6,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 
 public interface ILectureRepository extends MongoRepository<Lecture, String> {
-    @Aggregation(pipeline={"{ $addFields: { ended_at: { $toDate: '$ended_at' } } }", "{ $sort: { ended_at: -1 } }", "{ $match: { subject_id: ObjectId(?0) } }", "{ $limit: 1 }"})
+    @Aggregation(pipeline={"{ $sort: { ended_at: -1 } }", "{ $match: { subject_id: ?0 } }", "{ $limit: 1 }"})
     Lecture getLast(String subjectId);
     /*@Query(value="{'subject_id': {$regex : ?0, $options: 'i'}}")
     List<Lecture> getAllBySubject(String subjectId);*/
