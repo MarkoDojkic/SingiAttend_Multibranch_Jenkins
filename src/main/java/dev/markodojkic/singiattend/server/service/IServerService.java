@@ -5,10 +5,10 @@ import java.text.ParseException;
 import java.util.List;
 
 public interface IServerService {
-    Staff addNewStaffMember(Staff newStaff, boolean isUpdate);
+    Staff addNewStaffMember(Staff newStaff);
     Staff updateStaffMemberById(String id, Staff newStaffData);
     boolean checkPassword(String id, String plainPassword);
-    Student addNewStudent(Student newStudent, boolean isUpdate);
+    Student addNewStudent(Student newStudent);
     Student updateStudentById(String id, Student newStudentData);
     String checkPasswordStudent(String index, String plainPassword);
     String getNameSurnameStudent(String index);
@@ -37,7 +37,7 @@ public interface IServerService {
     Exercise getLastExercise(String subjectId); //Query
     void startNewLecture(String subjectId, String begin, String end);
     void startNewExercise(String subjectId, String begin, String end);
-    List<Staff> getAllAsistants();
+    List<Staff> getAllAssistants();
     void startNewSubjectYear(String subjectId);
     void endCurrentSubjectYear(String subjectId);
     Subject updateSubjectBySubjectId(Subject newSubjectData, String subjectId);

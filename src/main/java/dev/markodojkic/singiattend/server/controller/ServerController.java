@@ -17,7 +17,7 @@ public class ServerController {
     @PostMapping("insert/staff")
     @CrossOrigin(origins = {"https://localhost:62812"})
     public Staff addNewStaffMember(@RequestBody Staff newStaff){
-        return this.serverService.addNewStaffMember(newStaff, false);
+        return this.serverService.addNewStaffMember(newStaff);
     }
 
     @RequestMapping(value = "update/staff/{id}", method = RequestMethod.PATCH)
@@ -35,7 +35,7 @@ public class ServerController {
     @PostMapping("insert/student")
     @CrossOrigin(origins = {"https://localhost:62812"})
     Student addNewStudent(@RequestBody Student newStudent){
-        return this.serverService.addNewStudent(newStudent, false);
+        return this.serverService.addNewStudent(newStudent);
     }
 
     @RequestMapping(value = "update/student/{id}", method = RequestMethod.PATCH)
@@ -82,8 +82,8 @@ public class ServerController {
 
     @RequestMapping(value = "getAllAssistants", method = RequestMethod.GET)
     @CrossOrigin(origins = {"https://localhost:62812"})
-    List<Staff> getAllAsistants(){
-        return this.serverService.getAllAsistants();
+    List<Staff> getAllAssistants(){
+        return this.serverService.getAllAssistants();
     }
 
     @RequestMapping(value = "getAllStudies", method = RequestMethod.GET)
@@ -230,13 +230,13 @@ public class ServerController {
         return this.serverService.checkIfStaffHasSubjectAssigned(staffId, isAssistant.equals("1"));
     }
 
-    @RequestMapping(value = "deleteStaff/{staffId}/{isAssistant}", method = RequestMethod.DELETE)
+    @RequestMapping(value = "delete/staff/{staffId}/{isAssistant}", method = RequestMethod.DELETE)
     @CrossOrigin(origins = {"https://localhost:62812"})
     void deleteStaff(@PathVariable String staffId, @PathVariable String isAssistant){
         this.serverService.deleteStaff(staffId,isAssistant.equals("1"));
     }
 
-    @RequestMapping(value = "deleteStudent/{studentId}", method = RequestMethod.DELETE)
+    @RequestMapping(value = "delete/student/{studentId}", method = RequestMethod.DELETE)
     @CrossOrigin(origins = {"https://localhost:62812"})
     void deleteStudent(@PathVariable String studentId){
         this.serverService.deleteStudent(studentId);

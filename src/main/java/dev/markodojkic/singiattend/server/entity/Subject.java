@@ -5,9 +5,11 @@ import org.hibernate.annotations.Type;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.data.mongodb.core.mapping.FieldType;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.persistence.*;
 import java.util.ArrayList;
+import java.util.Date;
 
 @Data
 @Document(collection = "Subjects")
@@ -23,9 +25,13 @@ public class Subject {
     @Field(targetType = FieldType.OBJECT_ID, value = "assistant_id")
     private String assistantId;
     @Field("last_lecture_at")
-    private String lastLectureAt;
+    @Temporal(TemporalType.TIMESTAMP)
+    @DateTimeFormat(style = "yyyy-MM-dd HH:mm:ss.SSS")
+    private Date lastLectureAt;
     @Field("last_exercise_at")
-    private String lastExerciseAt;
+    @Temporal(TemporalType.TIMESTAMP)
+    @DateTimeFormat(style = "yyyy-MM-dd HH:mm:ss.SSS")
+    private Date lastExerciseAt;
     @Type(type = "string-array")
     @Field("enroled_students")
     private ArrayList<String> enroled_students;

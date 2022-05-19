@@ -11,8 +11,10 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -35,8 +37,8 @@ public class ServerService implements IServerService {
     private ISubjectRepository subjectRepository;
 
     @Override
-    public Staff addNewStaffMember(Staff newStaff, boolean isUpdate) {
-        if(!isUpdate) newStaff.setPassword_hash(this.encryptPassword(newStaff.getPassword_hash()));
+    public Staff addNewStaffMember(Staff newStaff) {
+        newStaff.setPassword_hash(this.encryptPassword(newStaff.getPassword_hash()));
         return this.staffRepository.save(newStaff);
     }
 
@@ -48,17 +50,18 @@ public class ServerService implements IServerService {
         if(newStaffData.getName_surname() != null && !newStaffData.getName_surname().isBlank()) staff.setName_surname(newStaffData.getName_surname());
         if(newStaffData.getRole() != null && !newStaffData.getRole().isBlank()) staff.setRole(newStaffData.getRole());
         if(newStaffData.getPassword_hash() != null && !newStaffData.getPassword_hash().isBlank()) staff.setPassword_hash(this.encryptPassword(newStaffData.getPassword_hash()));
-        return this.addNewStaffMember(staff, true);
+        return this.staffRepository.save(staff);
     }
 
     @Override
     public boolean checkPassword(String id, String plainPassword) {
+        System.out.println(this.encryptPassword(plainPassword));
         return this.encryptPassword(plainPassword).equals(this.staffRepository.findById(id).get().getPassword_hash());
     }
 
     @Override
-    public Student addNewStudent(Student newStudent, boolean isUpdate) {
-        if(!isUpdate) newStudent.setPassword_hash(this.encryptPassword(newStudent.getPassword_hash()));
+    public Student addNewStudent(Student newStudent) {
+        newStudent.setPassword_hash(this.encryptPassword(newStudent.getPassword_hash()));
         return this.studentRepository.save(newStudent);
     }
 
@@ -71,8 +74,8 @@ public class ServerService implements IServerService {
         if(newStudentData.getName_surname() != null && !newStudentData.getName_surname().isEmpty()) student.setName_surname(newStudentData.getName_surname());
         if(newStudentData.getIndex() != null && !newStudentData.getIndex().isEmpty()) student.setIndex(newStudentData.getIndex());
         if(newStudentData.getPassword_hash() != null && !newStudentData.getPassword_hash().isEmpty()) student.setPassword_hash(this.encryptPassword(newStudentData.getPassword_hash()));
-        if(!newStudentData.getStudyId().isBlank()) student.setStudyId(newStudentData.getStudyId());
-        return this.addNewStudent(student, true);
+        if(newStudentData.getStudyId() != null && !newStudentData.getStudyId().isEmpty()) student.setStudyId(newStudentData.getStudyId());
+        return this.studentRepository.save(student);
     }
 
     @Override
@@ -91,33 +94,24 @@ public class ServerService implements IServerService {
     }
 
     @Override
-    public List<CourseDataInstance> getCourseData(String index) throws ParseException {
+    public List<CourseDataInstance> getCourseData(String index) {
         final String index_ = index.substring(0, index.length() - 6) + "/" + index.substring(index.length() - 6);
         List<CourseDataInstance> output = new ArrayList<>();
+        Date from = Date.from(Instant.now().minus(15, ChronoUnit.MINUTES));
+        Date to = Date.from(Instant.now());
 
-        for(CourseDataLecture lecture: this.subjectRepository.getCourseDataLectures(this.studentRepository.getByIndex(index_).getId(), System.currentTimeMillis() - 1000 * 60 * 60 * 2, System.currentTimeMillis()).getMappedResults()){
-            String time = (lecture.getLast_lecture_at().split("T")[1]).split("\\+")[0];
-            SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
-            Date d = df.parse(time);
-            Calendar cal = Calendar.getInstance();
-            cal.setTime(d);
-            cal.add(Calendar.MINUTE, 45);
-            String newTime = df.format(cal.getTime());
-            output.add(new CourseDataInstance(lecture.getId(),lecture.getProfessor().get(0).getName_surname(),lecture.getTitle() + "-предавања", lecture.getTitle_english() + "-lecture", time, newTime));
+        for(CourseDataSubjectInstance courseDataSubjectInstance: this.subjectRepository.getCourseDataByLectures(this.studentRepository.getByIndex(index_).getId(), from, to).getMappedResults()){
+            Lecture lecture = this.getLastLecture(courseDataSubjectInstance.getId());
+            System.out.println(lecture);
+            output.add(new CourseDataInstance(lecture.getId(),courseDataSubjectInstance.getProfessor().get(0).getName_surname(),courseDataSubjectInstance.getTitle() + "-предавања", courseDataSubjectInstance.getTitle_english() + "-lecture", lecture.getStarted_at().toString(), lecture.getEnded_at().toString()));
         }
 
-        for(CourseDataLecture exercise: this.subjectRepository.getCourseDataExercises(this.studentRepository.getByIndex(index_).getId(), System.currentTimeMillis() - 1000 * 60 * 60 * 2, System.currentTimeMillis()).getMappedResults()){
-            String ns = "";
-            if(exercise.getAssistant().size() == 0) ns = exercise.getProfessor().get(0).getName_surname();
-            else ns = exercise.getAssistant().get(0).getName_surname();
-            String time = (exercise.getLast_lecture_at().split("T")[1]).split("\\+")[0];
-            SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
-            Date d = df.parse(time);
-            Calendar cal = Calendar.getInstance();
-            cal.setTime(d);
-            cal.add(Calendar.MINUTE, 45);
-            String newTime = df.format(cal.getTime());
-            output.add(new CourseDataInstance(exercise.getId(),ns,exercise.getTitle() + "-вежбе", exercise.getTitle_english() + "-practice", time, newTime));
+        for(CourseDataSubjectInstance courseDataSubjectInstance: this.subjectRepository.getCourseDataByExercises(this.studentRepository.getByIndex(index_).getId(), from, to).getMappedResults()){
+            String ns;
+            if(courseDataSubjectInstance.getAssistant().size() == 0) ns = courseDataSubjectInstance.getProfessor().get(0).getName_surname();
+            else ns = courseDataSubjectInstance.getAssistant().get(0).getName_surname();
+            Exercise exercise = this.getLastExercise(courseDataSubjectInstance.getId());
+            output.add(new CourseDataInstance(exercise.getId(),ns,courseDataSubjectInstance.getTitle() + "-вежбе", courseDataSubjectInstance.getTitle_english() + "-practice", exercise.getStarted_at().toString(), exercise.getEnded_at().toString()));
         }
 
         return output;
@@ -134,16 +128,16 @@ public class ServerService implements IServerService {
             attendedStudents.add(this.studentRepository.getByIndex(index_).getId());
             lecture.setAttended_students(attendedStudents);
             this.lectureRepository.save(lecture);
-            return "SUCCESSFULLY RECORDED ATTENDANCE";
         } else {
             Exercise exercise = this.exerciseRepository.getLast(subjectId);
             var attendedStudents = exercise.getAttended_students();
-            if(attendedStudents.contains(this.studentRepository.getByIndex(index_).getId())) return "ALERADY RECORDED ATTENDANCE";
+            if(attendedStudents.contains(this.studentRepository.getByIndex(index_).getId())) return "ALREADY RECORDED ATTENDANCE";
             attendedStudents.add(this.studentRepository.getByIndex(index_).getId());
             exercise.setAttended_students(attendedStudents);
             this.exerciseRepository.save(exercise);
-            return "SUCCESSFULLY RECORDED ATTENDANCE";
         }
+
+        return "SUCCESSFULLY RECORDED ATTENDANCE";
     }
 
     @Override
@@ -243,9 +237,7 @@ public class ServerService implements IServerService {
                 this.updateSubjectBySubjectId(s, s.getId());
             });
         } else {
-            this.getSubjectsByProfessorId(staffId).forEach(s -> {
-                this.subjectRepository.deleteById(s.getId());
-            });
+            this.getSubjectsByProfessorId(staffId).forEach(s -> this.subjectRepository.deleteById(s.getId()));
         }
 
         this.staffRepository.deleteById(staffId);
@@ -272,15 +264,7 @@ public class ServerService implements IServerService {
 
     @Override
     public List<Exercise> allExercisesBySubjectId(String subjectId) {
-        SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy'T'HH:mm:ss'+0000'");
-        return this.exerciseRepository.findAll().stream().filter(e -> e.getSubject_id().equals(subjectId)).sorted((l1, l2) -> {
-            try {
-                return sdf.parse(l1.getEnded_at().split("T")[0]).after(sdf.parse(l2.getEnded_at().split("T")[0])) ? 1 : -1;
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
-            return 0;
-        }).collect(Collectors.toList());
+        return this.exerciseRepository.findAll().stream().filter(e -> e.getSubject_id().equals(subjectId)).sorted((l1, l2) -> l1.getEnded_at().after(l2.getEnded_at()) ? 1 : -1).collect(Collectors.toList());
     }
 
     @Override
@@ -290,28 +274,26 @@ public class ServerService implements IServerService {
 
     @Override
     public void startNewLecture(String subjectId, String begin, String end) {
-        SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy");
-        begin = sdf.format(new Date()) + "T" + begin + ":00+0000";
-        end = sdf.format(new Date()) + "T" + end + ":00+0000";
-        this.lectureRepository.save(new Lecture(subjectId, begin, end, new ArrayList<>()));
+        Date lectureBeginsAtUTC = Date.from(LocalDateTime.of(LocalDate.now(), LocalTime.parse(begin, DateTimeFormatter.ofPattern("HH:mm"))).atZone(ZoneId.of("Europe/Belgrade")).withZoneSameInstant(ZoneId.of("UTC")).toInstant());
+        Date lectureEndsAtUTC = Date.from(LocalDateTime.of(LocalDate.now(), LocalTime.parse(end, DateTimeFormatter.ofPattern("HH:mm"))).atZone(ZoneId.of("Europe/Belgrade")).withZoneSameInstant(ZoneId.of("UTC")).toInstant());
+        this.lectureRepository.save(new Lecture(subjectId, lectureBeginsAtUTC, lectureEndsAtUTC, new ArrayList<>()));
         Subject subject = this.subjectRepository.findById(subjectId).get();
-        subject.setLastLectureAt(begin);
+        subject.setLastLectureAt(lectureBeginsAtUTC);
         this.updateSubjectBySubjectId(subject, subjectId);
     }
 
     @Override
     public void startNewExercise(String subjectId, String begin, String end) {
-        SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy");
-        begin = sdf.format(new Date()) + "T" + begin + ":00+0000";
-        end = sdf.format(new Date()) + "T" + end + ":00+0000";
-        this.exerciseRepository.save(new Exercise(subjectId, begin, end, new ArrayList<>()));
+        Date exerciseBeginsAtUTC = Date.from(LocalDateTime.of(LocalDate.now(), LocalTime.parse(begin, DateTimeFormatter.ofPattern("HH:mm"))).atZone(ZoneId.of("Europe/Belgrade")).withZoneSameInstant(ZoneId.of("UTC")).toInstant());
+        Date exerciseEndsAtUTC = Date.from(LocalDateTime.of(LocalDate.now(), LocalTime.parse(end, DateTimeFormatter.ofPattern("HH:mm"))).atZone(ZoneId.of("Europe/Belgrade")).withZoneSameInstant(ZoneId.of("UTC")).toInstant());       this.exerciseRepository.save(new Exercise(subjectId, exerciseBeginsAtUTC, exerciseEndsAtUTC, new ArrayList<>()));
+        this.exerciseRepository.save(new Exercise(subjectId, exerciseBeginsAtUTC, exerciseEndsAtUTC, new ArrayList<>()));
         Subject subject = this.subjectRepository.findById(subjectId).get();
-        subject.setLastExerciseAt(begin);
+        subject.setLastExerciseAt(exerciseBeginsAtUTC);
         this.updateSubjectBySubjectId(subject, subjectId);
     }
 
     @Override
-    public List<Staff> getAllAsistants() {
+    public List<Staff> getAllAssistants() {
         return this.getAllStaff().stream().filter(s -> s.getRole().equals("assistant")).collect(Collectors.toList());
     }
 
@@ -348,15 +330,7 @@ public class ServerService implements IServerService {
 
     @Override
     public List<Lecture> allLecturesBySubjectId(String subjectId) {
-        SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy'T'HH:mm:ss'+0000'"); //Example of data: 28.11.2021T02:29:52+0000
-        return this.lectureRepository.findAll().stream().filter(l -> l.getSubject_id().equals(subjectId)).sorted((l1, l2) -> {
-            try {
-                return sdf.parse(l1.getEnded_at()).after(sdf.parse(l2.getEnded_at())) ? 1 : -1;
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
-            return 0;
-        }).collect(Collectors.toList());
+        return this.lectureRepository.findAll().stream().filter(l -> l.getSubject_id().equals(subjectId)).sorted((l1, l2) -> l1.getEnded_at().after(l2.getEnded_at()) ? 1 : -1).collect(Collectors.toList());
     }
 
     @Override
