@@ -55,8 +55,8 @@ public class ServerService implements IServerService {
 
     @Override
     public boolean checkPassword(String id, String plainPassword) {
-        System.out.println(this.encryptPassword(plainPassword));
-        return this.encryptPassword(plainPassword).equals(this.staffRepository.findById(id).get().getPassword_hash());
+        Staff found = this.staffRepository.findById(id).orElse(null);
+        return found == null ? false : this.encryptPassword(plainPassword).equals(found.getPassword_hash());
     }
 
     @Override
@@ -102,7 +102,6 @@ public class ServerService implements IServerService {
 
         for(CourseDataSubjectInstance courseDataSubjectInstance: this.subjectRepository.getCourseDataByLectures(this.studentRepository.getByIndex(index_).getId(), from, to).getMappedResults()){
             Lecture lecture = this.getLastLecture(courseDataSubjectInstance.getId());
-            System.out.println(lecture);
             output.add(new CourseDataInstance(lecture.getId(),courseDataSubjectInstance.getProfessor().get(0).getName_surname(),courseDataSubjectInstance.getTitle() + "-предавања", courseDataSubjectInstance.getTitle_english() + "-lecture", lecture.getStarted_at().toString(), lecture.getEnded_at().toString()));
         }
 
@@ -259,7 +258,7 @@ public class ServerService implements IServerService {
 
     @Override
     public boolean subjectIsInactiveById(String subjectId) {
-        return this.getSubjectById(subjectId).getIsInactive().equals("1");
+        return this.getSubjectById(subjectId).getIsInactive() == null ? true : this.getSubjectById(subjectId).getIsInactive().equals("1");
     }
 
     @Override

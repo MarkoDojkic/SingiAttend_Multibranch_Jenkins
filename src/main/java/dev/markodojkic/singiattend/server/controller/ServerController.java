@@ -112,7 +112,7 @@ public class ServerController {
 
     @RequestMapping(value = "getSubject/{subjectId}", method = RequestMethod.GET)
     @CrossOrigin(origins = {"https://localhost:62812"})
-    Subject getSubjectById(@PathVariable String subjectId){
+    Subject getSubjectById(@PathVariable String subjectId) {
         return this.serverService.getSubjectById(subjectId);
     }
 
