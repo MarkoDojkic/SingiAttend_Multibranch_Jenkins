@@ -5,7 +5,6 @@ import dev.markodojkic.singiattend.server.service.ServerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.text.ParseException;
 import java.util.List;
 
 @RestController()
@@ -26,7 +25,7 @@ public class ServerController {
         return this.serverService.updateStaffMemberById(id, newStaffData);
     }
 
-    @RequestMapping(value = "checkPassword/staff/{id}", method = RequestMethod.GET)
+    @RequestMapping(value = "checkPassword/staff/{id}", method = RequestMethod.POST)
     @CrossOrigin(origins = {"https://localhost:62812"})
     String checkPassword(@PathVariable String id, @RequestBody String plainPassword){
         return this.serverService.checkPassword(id, plainPassword) ? this.serverService.getStaffNameAndRole(id) : "INVALID\n";
@@ -58,7 +57,7 @@ public class ServerController {
 
     @RequestMapping(value = "getCourseData/{index}", method = RequestMethod.GET)
     @CrossOrigin(origins = {"https://localhost:62812"})
-    List<CourseDataInstance> getCourseData(@PathVariable String index) throws ParseException {
+    List<CourseDataInstance> getCourseData(@PathVariable String index) {
         return this.serverService.getCourseData(index);
     }
 
