@@ -4,10 +4,9 @@ import lombok.Data;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.data.mongodb.core.mapping.FieldType;
-import org.springframework.data.mongodb.core.mapping.MongoId;
 
-import javax.persistence.*;
-import java.util.ArrayList;
+import javax.persistence.Id;
+import java.util.List;
 
 @Data
 @Document(collection = "Students")
@@ -15,11 +14,11 @@ public class Student {
     @Id
     private String id;
     @Field("name_surname")
-    private String name_surname;
+    private String nameSurname;
     @Field("index")
     private String index;
     @Field("password_hash")
-    private String password_hash;
+    private String passwordHash;
     @Field("email")
     private String email;
     @Field(targetType = FieldType.OBJECT_ID, value = "study_id")
@@ -27,5 +26,5 @@ public class Student {
     @Field("year")
     private String year;
     @Field("study")
-    private ArrayList<Study> study;
+    private List<Study> study;
 }
