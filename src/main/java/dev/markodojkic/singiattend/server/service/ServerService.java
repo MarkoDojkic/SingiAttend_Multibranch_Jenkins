@@ -1,116 +1,125 @@
 package dev.markodojkic.singiattend.server.service;
 
 import dev.markodojkic.singiattend.server.entity.*;
+import dev.markodojkic.singiattend.server.mapper.*;
+import dev.markodojkic.singiattend.server.model.*;
 import dev.markodojkic.singiattend.server.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Example;
+import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class ServerService implements IServerService {
-    //TODO: FIX WHEN _class is added to mongodb on insert/update
-    //TODO: FIX WHEN date is updated to be in same format as before
-    //TODO: REFACTOR ANDROID APP, iOS APP IS FIXED
-    @Autowired
-    private IExerciseRepository exerciseRepository;
-    @Autowired
-    private ILectureRepository lectureRepository;
-    @Autowired
-    private IStaffRepository staffRepository;
-    @Autowired
-    private IStudentRepository studentRepository;
-    @Autowired
-    private IStudyRepository studyRepository;
-    @Autowired
-    private ISubjectRepository subjectRepository;
+    public static final String LECTURES = "Lectures";
+    public static final String EXERCISES = "Exercises";
+    private final ClassInstanceMapper classInstanceMapper;
+    private final StaffMapper staffMapper;
+    private final StudentMapper studentMapper;
+    private final StudyMapper studyMapper;
+    private final SubjectMapper subjectMapper;
 
-    @Override
-    public Staff addNewStaffMember(Staff newStaff) {
-        newStaff.setPassword_hash(this.encryptPassword(newStaff.getPassword_hash()));
-        return this.staffRepository.save(newStaff);
+    private final ClassInstanceRepository classInstanceRepository;
+    private final IStaffRepository staffRepository;
+    private final IStudentRepository studentRepository;
+    private final IStudyRepository studyRepository;
+    private final ISubjectRepository subjectRepository;
+
+    @Autowired
+    public ServerService(ClassInstanceMapper classInstanceMapper, StaffMapper staffMapper, StudentMapper studentMapper, StudyMapper studyMapper, SubjectMapper subjectMapper, ClassInstanceRepository classInstanceRepository, IStaffRepository staffRepository, IStudentRepository studentRepository, IStudyRepository studyRepository, ISubjectRepository subjectRepository) {
+        this.classInstanceMapper = classInstanceMapper;
+        this.staffMapper = staffMapper;
+        this.studentMapper = studentMapper;
+        this.studyMapper = studyMapper;
+        this.subjectMapper = subjectMapper;
+        this.classInstanceRepository = classInstanceRepository;
+        this.staffRepository = staffRepository;
+        this.studentRepository = studentRepository;
+        this.studyRepository = studyRepository;
+        this.subjectRepository = subjectRepository;
     }
 
     @Override
-    public Staff updateStaffMemberById(String id, Staff newStaffData) {
-        Staff staff = staffRepository.findById(id).isPresent() ? staffRepository.findById(id).get() : null;
-        if(staff == null) return null;
-        if(newStaffData.getEmail() != null && !newStaffData.getEmail().isBlank()) staff.setEmail(newStaffData.getEmail());
-        if(newStaffData.getName_surname() != null && !newStaffData.getName_surname().isBlank()) staff.setName_surname(newStaffData.getName_surname());
-        if(newStaffData.getRole() != null && !newStaffData.getRole().isBlank()) staff.setRole(newStaffData.getRole());
-        if(newStaffData.getPassword_hash() != null && !newStaffData.getPassword_hash().isBlank()) staff.setPassword_hash(this.encryptPassword(newStaffData.getPassword_hash()));
-        return this.staffRepository.save(staff);
+    public StaffDTO addNewStaffMember(StaffDTO newStaff) {
+        Staff newStaffEntity = staffMapper.toEntity(newStaff);
+        newStaffEntity.setPasswordHash(encryptPassword(newStaff.getPasswordHash()));
+        return staffMapper.toDTO(staffRepository.save(newStaffEntity));
     }
 
     @Override
-    public boolean checkPassword(String id, String plainPassword) {
-        Staff found = this.staffRepository.findById(id).orElse(null);
-        return found == null ? false : this.encryptPassword(plainPassword).equals(found.getPassword_hash());
+    public StaffDTO updateStaffMemberById(String staffId, StaffDTO newStaff) {
+        Staff existingStaffEntity = staffRepository.findById(staffId).orElse(null);
+        if(existingStaffEntity == null) return null;
+        if(StringUtils.hasLength(newStaff.getEmail())) existingStaffEntity.setEmail(newStaff.getEmail());
+        if(StringUtils.hasLength(newStaff.getNameSurname())) existingStaffEntity.setNameSurname(newStaff.getNameSurname());
+        if(StringUtils.hasLength(newStaff.getRole())) existingStaffEntity.setRole(newStaff.getRole());
+        if(StringUtils.hasLength(newStaff.getPasswordHash())) existingStaffEntity.setPasswordHash(encryptPassword(newStaff.getPasswordHash()));
+        return staffMapper.toDTO(staffRepository.save(existingStaffEntity));
     }
 
     @Override
-    public Student addNewStudent(Student newStudent) {
-        newStudent.setPassword_hash(this.encryptPassword(newStudent.getPassword_hash()));
-        return this.studentRepository.save(newStudent);
+    public boolean checkPassword(String staffId, String plainPassword) {
+        Optional<Staff> optionalStaffEntity = staffRepository.findById(staffId);
+        return optionalStaffEntity.isPresent() && encryptPassword(plainPassword).equals(optionalStaffEntity.get().getPasswordHash());
     }
 
     @Override
-    public Student updateStudentById(String id, Student newStudentData) {
-        Student student = studentRepository.findById(id).isPresent() ? studentRepository.findById(id).get() : null;
-        if(student == null) return null;
-        if(newStudentData.getYear() != null && newStudentData.getYear().isEmpty()) student.setYear(newStudentData.getYear());
-        if(newStudentData.getEmail() != null && !newStudentData.getEmail().isEmpty()) student.setEmail(newStudentData.getEmail());
-        if(newStudentData.getName_surname() != null && !newStudentData.getName_surname().isEmpty()) student.setName_surname(newStudentData.getName_surname());
-        if(newStudentData.getIndex() != null && !newStudentData.getIndex().isEmpty()) student.setIndex(newStudentData.getIndex());
-        if(newStudentData.getPassword_hash() != null && !newStudentData.getPassword_hash().isEmpty()) student.setPassword_hash(this.encryptPassword(newStudentData.getPassword_hash()));
-        if(newStudentData.getStudyId() != null && !newStudentData.getStudyId().isEmpty()) student.setStudyId(newStudentData.getStudyId());
-        return this.studentRepository.save(student);
+    public StudentDTO addNewStudent(StudentDTO newStudent) {
+        Student newStudentEntity = studentMapper.toEntity(newStudent);
+        newStudentEntity.setPasswordHash(encryptPassword(newStudent.getPasswordHash()));
+        return studentMapper.toDTO(studentRepository.save(newStudentEntity));
+    }
+
+    @Override
+    public StudentDTO updateStudentById(String studentId, StudentDTO newStudent) {
+        Student existingStudentEntity = studentRepository.findById(studentId).orElse(null);
+        if(existingStudentEntity == null) return null;
+        if(StringUtils.hasLength(newStudent.getYear())) existingStudentEntity.setYear(newStudent.getYear());
+        if(StringUtils.hasLength(newStudent.getEmail())) existingStudentEntity.setEmail(newStudent.getEmail());
+        if(StringUtils.hasLength(newStudent.getNameSurname())) existingStudentEntity.setNameSurname(newStudent.getNameSurname());
+        if(StringUtils.hasLength(newStudent.getIndex())) existingStudentEntity.setIndex(newStudent.getIndex());
+        if(StringUtils.hasLength(newStudent.getPasswordHash())) existingStudentEntity.setPasswordHash(encryptPassword(newStudent.getPasswordHash()));
+        if(StringUtils.hasLength(newStudent.getStudyId())) existingStudentEntity.setStudyId(newStudent.getStudyId());
+        return studentMapper.toDTO(studentRepository.save(existingStudentEntity));
     }
 
     @Override
     public String checkPasswordStudent(String index, String plainPassword) {
-        final String index_ = index.substring(0, index.length() - 6) + "/" + index.substring(index.length() - 6);
-        Optional<Student> optionalStudent = this.studentRepository.findAll().stream().filter(s -> s.getIndex().equals(index_)).findAny();
-        if(optionalStudent.isEmpty()) return "UNKNOWN";
-        String id = optionalStudent.get().getId();
-        return this.encryptPassword(plainPassword).equals(this.studentRepository.findById(id).get().getPassword_hash()) ? "VALID" : "INVALID";
+        return studentRepository.getByIndex(index.substring(0, index.length() - 6) + "/" + index.substring(index.length() - 6)).map(foundStudent -> encryptPassword(plainPassword).equals(foundStudent.getPasswordHash()) ? "VALID" : "INVALID").orElse("UNKNOWN");
     }
 
     @Override
     public String getNameSurnameStudent(String index) {
-        final String index_ = index.substring(0, index.length() - 6) + "/" + index.substring(index.length() - 6);
-        return this.studentRepository.getByIndex(index_) == null || this.studentRepository.getByIndex(index_).getName_surname().isEmpty() ? "-???-" : studentRepository.getByIndex(index_).getName_surname();
+        return studentRepository.getByIndex(index.substring(0, index.length() - 6) + "/" + index.substring(index.length() - 6)).map(Student::getNameSurname).orElse("-???-");
     }
 
     @Override
     public List<CourseDataInstance> getCourseData(String index) {
-        final String index_ = index.substring(0, index.length() - 6) + "/" + index.substring(index.length() - 6);
+        final String studentId = studentRepository.getByIndex(index.substring(0, index.length() - 6) + "/" + index.substring(index.length() - 6)).map(Student::getId).orElse("");
         List<CourseDataInstance> output = new ArrayList<>();
-        Date from = Date.from(Instant.now().minus(15, ChronoUnit.MINUTES));
-        Date to = Date.from(Instant.now());
+        final Date from = Date.from(Instant.now().minus(15, ChronoUnit.MINUTES));
+        final Date to = Date.from(Instant.now());
 
-        for(CourseDataSubjectInstance courseDataSubjectInstance: this.subjectRepository.getCourseDataByLectures(this.studentRepository.getByIndex(index_).getId(), from, to).getMappedResults()){
-            Lecture lecture = this.getLastLecture(courseDataSubjectInstance.getId());
-            output.add(new CourseDataInstance(lecture.getId(),courseDataSubjectInstance.getProfessor().get(0).getName_surname(),courseDataSubjectInstance.getTitle() + "-предавања", courseDataSubjectInstance.getTitle_english() + "-lecture", lecture.getStarted_at().toString(), lecture.getEnded_at().toString()));
+        for(CourseDataSubjectInstance courseDataSubjectInstance: subjectRepository.getCourseDataByLectures(studentId, from, to).getMappedResults()){
+            ClassInstanceDTO lecture = getLastClassInstanceBySubjectId(false, courseDataSubjectInstance.getId());
+            output.add(new CourseDataInstance(lecture.getId(),courseDataSubjectInstance.getProfessor().getNameSurname(),courseDataSubjectInstance.getTitle() + "-предавања", courseDataSubjectInstance.getTitleEnglish() + "-lecture", lecture.getStartedAt().toString(), lecture.getEndedAt().toString()));
         }
 
-        for(CourseDataSubjectInstance courseDataSubjectInstance: this.subjectRepository.getCourseDataByExercises(this.studentRepository.getByIndex(index_).getId(), from, to).getMappedResults()){
-            String ns;
-            if(courseDataSubjectInstance.getAssistant().size() == 0) ns = courseDataSubjectInstance.getProfessor().get(0).getName_surname();
-            else ns = courseDataSubjectInstance.getAssistant().get(0).getName_surname();
-            Exercise exercise = this.getLastExercise(courseDataSubjectInstance.getId());
-            output.add(new CourseDataInstance(exercise.getId(),ns,courseDataSubjectInstance.getTitle() + "-вежбе", courseDataSubjectInstance.getTitle_english() + "-practice", exercise.getStarted_at().toString(), exercise.getEnded_at().toString()));
+        for(CourseDataSubjectInstance courseDataSubjectInstance: subjectRepository.getCourseDataByExercises(studentId, from, to).getMappedResults()){
+            ClassInstanceDTO exercise = getLastClassInstanceBySubjectId(false, courseDataSubjectInstance.getId());
+            output.add(new CourseDataInstance(exercise.getId(), (courseDataSubjectInstance.getAssistant() == null ?  courseDataSubjectInstance.getProfessor().getNameSurname() : courseDataSubjectInstance.getAssistant().getNameSurname()),courseDataSubjectInstance.getTitle() + "-вежбе", courseDataSubjectInstance.getTitleEnglish() + "-practice", exercise.getStartedAt().toString(), exercise.getEndedAt().toString()));
         }
 
         return output;
@@ -118,30 +127,21 @@ public class ServerService implements IServerService {
 
     @Override
     public String recordAttendance(String subjectId, String index, boolean isExercise) {
-        final String index_ = index.substring(0, index.length() - 6) + "/" + index.substring(index.length() - 6);
+        final String studentId = studentRepository.getByIndex(index.substring(0, index.length() - 6) + "/" + index.substring(index.length() - 6)).map(Student::getId).orElse("");
 
-        if(!isExercise){
-            Lecture lecture = this.lectureRepository.getLast(subjectId);
-            var attendedStudents = lecture.getAttended_students();
-            if(attendedStudents.contains(this.studentRepository.getByIndex(index_).getId())) return "ALREADY RECORDED ATTENDANCE";
-            attendedStudents.add(this.studentRepository.getByIndex(index_).getId());
-            lecture.setAttended_students(attendedStudents);
-            this.lectureRepository.save(lecture);
-        } else {
-            Exercise exercise = this.exerciseRepository.getLast(subjectId);
-            var attendedStudents = exercise.getAttended_students();
-            if(attendedStudents.contains(this.studentRepository.getByIndex(index_).getId())) return "ALREADY RECORDED ATTENDANCE";
-            attendedStudents.add(this.studentRepository.getByIndex(index_).getId());
-            exercise.setAttended_students(attendedStudents);
-            this.exerciseRepository.save(exercise);
-        }
+        ClassInstance classInstance = classInstanceRepository.getLastBySubjectId((isExercise ? EXERCISES : LECTURES), subjectId);
+        var attendedStudents = classInstance.getAttendedStudents();
+        if(attendedStudents.contains(studentId)) return "ALREADY RECORDED ATTENDANCE";
+        attendedStudents.add(studentId);
+        classInstance.setAttendedStudents(attendedStudents);
+        classInstanceRepository.save((isExercise ? EXERCISES : LECTURES), classInstance);
 
         return "SUCCESSFULLY RECORDED ATTENDANCE";
     }
 
     @Override
     public boolean checkPasswordAdmin(String plainPassword) {
-        return this.encryptPassword(plainPassword).equals("1cfMqJGcxQ/L9LJSAk3bjk0KmDOlRLU+U2dge6iFlTY=");
+        return encryptPassword(plainPassword).equals("1cfMqJGcxQ/L9LJSAk3bjk0KmDOlRLU+U2dge6iFlTY=");
     }
 
     @Override
@@ -149,230 +149,182 @@ public class ServerService implements IServerService {
         List<AttendanceDataInstance> output = new ArrayList<>();
         final String index_ = index.substring(0, index.length() - 6) + "/" + index.substring(index.length() - 6);
 
-        AggregationResults<AttendanceSubobjectInstance> attendanceSubobjectInstances = this.subjectRepository.getSubobjectdata(this.studentRepository.getByIndex(index_).getId());
-        for (AttendanceSubobjectInstance attendanceSubobjectInstance:attendanceSubobjectInstances) {
-            attendanceSubobjectInstance.setNameT(attendanceSubobjectInstance.getProfessor().get(0).getName_surname());
-            attendanceSubobjectInstance.setNameA(attendanceSubobjectInstance.getAssistant().size() == 0 ? "" : attendanceSubobjectInstance.getAssistant().get(0).getName_surname());
-            attendanceSubobjectInstance.setProfessor(null);
-            attendanceSubobjectInstance.setAssistant(null);
-            int al = this.getAttendedLectures(attendanceSubobjectInstance.getSubjectId(), index_);
-            int ap = this.getAttendedPractices(attendanceSubobjectInstance.getSubjectId(), index_);
-            int tl = this.getTotalLectures(attendanceSubobjectInstance.getSubjectId());
-            int tp = this.getTotalPractices(attendanceSubobjectInstance.getSubjectId());
-            output.add(new AttendanceDataInstance(attendanceSubobjectInstance, al, ap, tl, tp));
+        AggregationResults<AttendanceHelperInstance> attendanceHelperInstances = subjectRepository.getAttendanceHelperInstanceById(studentRepository.getByIndex(index_).map(Student::getId).orElse(""));
+        for (AttendanceHelperInstance attendanceHelperInstance : attendanceHelperInstances) {
+            attendanceHelperInstance.setNameT(attendanceHelperInstance.getProfessor().getNameSurname());
+            attendanceHelperInstance.setNameA(attendanceHelperInstance.getAssistant() == null ? "" : attendanceHelperInstance.getAssistant().getNameSurname());
+            attendanceHelperInstance.setProfessor(null);
+            attendanceHelperInstance.setAssistant(null);
+            int al = classInstanceRepository.getAllAttendedBySubjectIdAndStudentIdCount(LECTURES, attendanceHelperInstance.getSubjectId(), index_);
+            int ap = classInstanceRepository.getAllAttendedBySubjectIdAndStudentIdCount(EXERCISES, attendanceHelperInstance.getSubjectId(), index_);
+            int tl = classInstanceRepository.getAllBySubjectIdCount(LECTURES, attendanceHelperInstance.getSubjectId());
+            int tp = classInstanceRepository.getAllBySubjectIdCount(EXERCISES, attendanceHelperInstance.getSubjectId());
+            output.add(new AttendanceDataInstance(attendanceHelperInstance, al, ap, tl, tp));
         }
         return output;
     }
 
     @Override
-    public List<Subject> getSubjectsByProfessorId(String professorId) {
-        return this.getAllSubjects().stream().filter(s -> s.getProfessorId().equals(professorId)).collect(Collectors.toList());
+    public List<SubjectDTO> getSubjectsByProfessorId(String professorId) {
+        return subjectMapper.toDTOList(subjectRepository.findAllAggregationByProfessorId(professorId).getMappedResults());
     }
 
     @Override
-    public List<Subject> getSubjectsByAssistantId(String assistantId) {
-        return this.getAllSubjects().stream().filter(s -> s.getAssistantId() != null && s.getAssistantId().equals(assistantId)).collect(Collectors.toList());
+    public List<SubjectDTO> getSubjectsByAssistantId(String assistantId) {
+        return subjectMapper.toDTOList(subjectRepository.findAllAggregationByAssistantId(assistantId).getMappedResults());
     }
 
     @Override
-    public List<Staff> getAllStaff() {
-        return this.staffRepository.findAll();
+    public List<StaffDTO> getAllStaff() {
+        return staffMapper.toDTOList(staffRepository.findAll());
     }
 
     @Override
-    public List<Study> getAllStudies() {
-        return this.studyRepository.findAll();
+    public List<StudyDTO> getAllStudies() {
+        return studyMapper.toDTOList(studyRepository.findAll());
     }
 
     @Override
-    public List<Student> getAllStudents() {
-        return this.studentRepository.findAll();
+    public List<StudentDTO> getAllStudents() {
+        return studentMapper.toDTOList(studentRepository.findAllAggregated());
     }
 
     @Override
-    public List<Subject> getAllSubjects() {
-        return this.subjectRepository.findAllAggregation().getMappedResults();
+    public List<SubjectDTO> getAllSubjects() {
+        return subjectMapper.toDTOList(subjectRepository.findAllAggregation().getMappedResults());
     }
 
     @Override
-    public Subject addNewSubject(Subject newSubject) {
+    public SubjectDTO addNewSubject(SubjectDTO newSubject) {
         //int is added as NumberInt, and _class property is added for all classes (can be ignored)
-        return this.subjectRepository.save(newSubject);
+        return subjectMapper.toDTO(subjectRepository.save(subjectMapper.toEntity(newSubject)));
     }
 
     @Override
     public int totalStudentsBySubjectId(String subjectId) {
-        return this.subjectRepository.findById(subjectId).isPresent() ? this.subjectRepository.findById(subjectId).get().getEnroled_students().size() : -1;
+        return subjectRepository.findById(subjectId).map(subject -> subject.getEnrolledStudentIds().size()).orElse(-1);
     }
 
     @Override
-    public List<Student> getAllStudentsBySY(String studyId, int year) {
-        return this.getAllStudents().stream().filter(s -> s.getStudyId().equals(studyId) && s.getYear().equals(String.valueOf(year))).collect(Collectors.toList());
+    public List<StudentDTO> getAllStudentsBySubjectIdAndAttendanceYear(String studyId, int attendanceYear) {
+        return studentMapper.toDTOList(studentRepository.findByStudyIdAndYear(studyId, attendanceYear));
     }
 
     @Override
-    public Subject getSubjectById(String subjectId) {
-        List<Subject> matchingSubjects = this.getAllSubjects().stream().filter(s -> s.getId().equals(subjectId)).collect(Collectors.toList());
-        return matchingSubjects.isEmpty() ? null : matchingSubjects.get(0);
+    public SubjectDTO getSubjectById(String subjectId) {
+        return subjectMapper.toDTO(subjectRepository.findById(subjectId).orElse(null));
     }
 
     @Override
-    public Staff getStaffMemberById(String id) {
-        List<Staff> matchingStaff = this.getAllStaff().stream().filter(s -> s.getId().equals(id)).collect(Collectors.toList());
-        return matchingStaff.isEmpty() ? null : matchingStaff.get(0);
-    }
-
-    @Override
-    public boolean checkIfStaffHasSubjectAssigned(String id, boolean isAssistant) {
-        if(isAssistant) return this.getSubjectsByAssistantId(id).isEmpty();
-        else return this.getSubjectsByProfessorId(id).isEmpty();
+    public boolean checkIfStaffHasSubjectAssigned(String id) {
+       return subjectRepository.existsByProfessorIdOrAssistantId(id, id);
     }
 
     @Override
     public void deleteStaff(String staffId, boolean isAssistant) {
         if(isAssistant){
-            this.getSubjectsByAssistantId(staffId).forEach(s -> {
-                s.setAssistantId("-1");
-                this.updateSubjectBySubjectId(s, s.getId());
+            getSubjectsByAssistantId(staffId).forEach(s -> {
+                s.setAssistantId(s.getProfessorId());
+                updateSubjectBySubjectId(s, s.getId());
             });
         } else {
-            this.getSubjectsByProfessorId(staffId).forEach(s -> this.subjectRepository.deleteById(s.getId()));
+            getSubjectsByProfessorId(staffId).forEach(s -> subjectRepository.deleteById(s.getId()));
         }
 
-        this.staffRepository.deleteById(staffId);
+        staffRepository.deleteById(staffId);
     }
 
     @Override
     public void deleteStudent(String studentId) {
-        this.studentRepository.deleteById(studentId);
+        studentRepository.deleteById(studentId);
     }
 
     @Override
-    public List<Student> allStudentBySubjectId(String subjectId) {
-        List<Student> output = new ArrayList<>();
-        for(String st: this.getSubjectById(subjectId).getEnroled_students()){
-            output.add(this.studentRepository.find(st));
-        }
-        return output;
+    public List<StudentDTO> getAllStudentsBySubjectId(String subjectId) {
+        return studentMapper.toDTOList(getSubjectById(subjectId).getEnrolledStudentIds().stream().map(enrolledStudentId -> studentRepository.getAggregatedById(enrolledStudentId).orElse(null)).filter(Objects::nonNull).toList());
     }
 
     @Override
     public boolean subjectIsInactiveById(String subjectId) {
-        return this.getSubjectById(subjectId).getIsInactive() == null ? true : this.getSubjectById(subjectId).getIsInactive().equals("1");
+        return getSubjectById(subjectId).getIsInactive() == null || getSubjectById(subjectId).getIsInactive().equals("1");
+    }
+
+    public List<ClassInstanceDTO> getAllClassInstancesBySubjectId(boolean isExercise, String subjectId) {
+        return classInstanceMapper.toDTOList(classInstanceRepository.getAllBySubjectId((isExercise ? EXERCISES : LECTURES), subjectId));
     }
 
     @Override
-    public List<Exercise> allExercisesBySubjectId(String subjectId) {
-        return this.exerciseRepository.findAll().stream().filter(e -> e.getSubject_id().equals(subjectId)).sorted((l1, l2) -> l1.getEnded_at().after(l2.getEnded_at()) ? 1 : -1).collect(Collectors.toList());
+    public ClassInstanceDTO getLastClassInstanceBySubjectId(boolean isExercise, String subjectId) {
+        return classInstanceMapper.toDTO(classInstanceRepository.getLastBySubjectId((isExercise ? EXERCISES : LECTURES), subjectId));
     }
 
     @Override
-    public Exercise getLastExercise(String subjectId) {
-        return this.exerciseRepository.getLast(subjectId);
+    public void startNewClassInstance(boolean isExercise, String subjectId, String begin, String end) {
+        Subject subject = subjectRepository.findById(subjectId).orElse(null);
+        if(subject == null) return;
+
+        Date beginsAtUTC = Date.from(LocalDateTime.of(LocalDate.now(), LocalTime.parse(begin, DateTimeFormatter.ofPattern("HH:mm"))).atZone(ZoneId.of("Europe/Belgrade")).withZoneSameInstant(ZoneId.of("UTC")).toInstant());
+        Date endsAtUTC = Date.from(LocalDateTime.of(LocalDate.now(), LocalTime.parse(end, DateTimeFormatter.ofPattern("HH:mm"))).atZone(ZoneId.of("Europe/Belgrade")).withZoneSameInstant(ZoneId.of("UTC")).toInstant());
+
+        classInstanceRepository.save((isExercise ? EXERCISES : LECTURES), new ClassInstance(subjectId, beginsAtUTC, endsAtUTC));
+        if(isExercise) subject.setLastExerciseAt(beginsAtUTC);
+        else subject.setLastLectureAt(beginsAtUTC);
+        updateSubjectBySubjectId(subjectMapper.toDTO(subject), subjectId);
     }
 
     @Override
-    public void startNewLecture(String subjectId, String begin, String end) {
-        Date lectureBeginsAtUTC = Date.from(LocalDateTime.of(LocalDate.now(), LocalTime.parse(begin, DateTimeFormatter.ofPattern("HH:mm"))).atZone(ZoneId.of("Europe/Belgrade")).withZoneSameInstant(ZoneId.of("UTC")).toInstant());
-        Date lectureEndsAtUTC = Date.from(LocalDateTime.of(LocalDate.now(), LocalTime.parse(end, DateTimeFormatter.ofPattern("HH:mm"))).atZone(ZoneId.of("Europe/Belgrade")).withZoneSameInstant(ZoneId.of("UTC")).toInstant());
-        this.lectureRepository.save(new Lecture(subjectId, lectureBeginsAtUTC, lectureEndsAtUTC, new ArrayList<>()));
-        Subject subject = this.subjectRepository.findById(subjectId).get();
-        subject.setLastLectureAt(lectureBeginsAtUTC);
-        this.updateSubjectBySubjectId(subject, subjectId);
-    }
-
-    @Override
-    public void startNewExercise(String subjectId, String begin, String end) {
-        Date exerciseBeginsAtUTC = Date.from(LocalDateTime.of(LocalDate.now(), LocalTime.parse(begin, DateTimeFormatter.ofPattern("HH:mm"))).atZone(ZoneId.of("Europe/Belgrade")).withZoneSameInstant(ZoneId.of("UTC")).toInstant());
-        Date exerciseEndsAtUTC = Date.from(LocalDateTime.of(LocalDate.now(), LocalTime.parse(end, DateTimeFormatter.ofPattern("HH:mm"))).atZone(ZoneId.of("Europe/Belgrade")).withZoneSameInstant(ZoneId.of("UTC")).toInstant());       this.exerciseRepository.save(new Exercise(subjectId, exerciseBeginsAtUTC, exerciseEndsAtUTC, new ArrayList<>()));
-        this.exerciseRepository.save(new Exercise(subjectId, exerciseBeginsAtUTC, exerciseEndsAtUTC, new ArrayList<>()));
-        Subject subject = this.subjectRepository.findById(subjectId).get();
-        subject.setLastExerciseAt(exerciseBeginsAtUTC);
-        this.updateSubjectBySubjectId(subject, subjectId);
-    }
-
-    @Override
-    public List<Staff> getAllAssistants() {
-        return this.getAllStaff().stream().filter(s -> s.getRole().equals("assistant")).collect(Collectors.toList());
+    public List<StaffDTO> getAllAssistants() {
+        Staff probe = new Staff();
+        probe.setRole("assistant");
+        return staffMapper.toDTOList(staffRepository.findAll(Example.of(probe, ExampleMatcher.matching().withStringMatcher(ExampleMatcher.StringMatcher.EXACT))));
     }
 
     @Override
     public void startNewSubjectYear(String subjectId) {
-        this.lectureRepository.deleteAll(this.lectureRepository.findAll().stream().filter(l -> l.getSubject_id().equals(subjectId)).collect(Collectors.toList()));
-        this.exerciseRepository.deleteAll(this.exerciseRepository.findAll().stream().filter(e -> e.getSubject_id().equals(subjectId)).collect(Collectors.toList()));
-        Subject subject = this.getSubjectById(subjectId);
+        classInstanceRepository.clean(subjectId);
+        SubjectDTO subject = getSubjectById(subjectId);
         subject.setIsInactive("0");
-        this.updateSubjectBySubjectId(subject, subjectId);
+        updateSubjectBySubjectId(subject, subjectId);
     }
 
     @Override
     public void endCurrentSubjectYear(String subjectId) {
-        Subject subject = this.getSubjectById(subjectId);
+        SubjectDTO subject = getSubjectById(subjectId);
         subject.setIsInactive("1");
-        this.updateSubjectBySubjectId(subject, subjectId);
+        updateSubjectBySubjectId(subject, subjectId);
     }
 
     @Override
-    public Subject updateSubjectBySubjectId(Subject newSubjectData, String subjectId) {
-        Subject subject = this.getSubjectById(subjectId);
-        if(newSubjectData.getTitle() != null) subject.setTitle(newSubjectData.getTitle());
-        if(newSubjectData.getTitle_english() != null) subject.setTitle_english(newSubjectData.getTitle_english());
-        if(newSubjectData.getProfessorId() != null) subject.setProfessorId(newSubjectData.getProfessorId());
-        if(newSubjectData.getAssistantId() != null) subject.setAssistantId(newSubjectData.getAssistantId().equals("-1") ? null : newSubjectData.getAssistantId());
-        if(newSubjectData.getLastLectureAt() != null) subject.setLastLectureAt(newSubjectData.getLastLectureAt());
-        if(newSubjectData.getLastExerciseAt() != null) subject.setLastExerciseAt(newSubjectData.getLastExerciseAt());
-        if(newSubjectData.getEnroled_students() != null) subject.setTitle(newSubjectData.getTitle());
-        if(newSubjectData.getIsInactive() != null) subject.setIsInactive(newSubjectData.getIsInactive());
+    public SubjectDTO updateSubjectBySubjectId(SubjectDTO newSubject, String subjectId) {
+        Subject existingSubjectEntity = subjectRepository.findById(subjectId).orElse(null);
+        if(existingSubjectEntity == null) return null;
+        if(StringUtils.hasLength(newSubject.getTitle())) existingSubjectEntity.setTitle(newSubject.getTitle());
+        if(StringUtils.hasLength(newSubject.getTitleEnglish())) existingSubjectEntity.setTitleEnglish(newSubject.getTitleEnglish());
+        if(StringUtils.hasLength(newSubject.getProfessorId())) existingSubjectEntity.setProfessorId(newSubject.getProfessorId());
+        if(StringUtils.hasLength(newSubject.getAssistantId())) existingSubjectEntity.setAssistantId(newSubject.getAssistantId().equals("-1") ? null : newSubject.getAssistantId());
+        if(newSubject.getLastLectureAt() != null) existingSubjectEntity.setLastLectureAt(newSubject.getLastLectureAt());
+        if(newSubject.getLastExerciseAt() != null) existingSubjectEntity.setLastExerciseAt(newSubject.getLastExerciseAt());
+        if(newSubject.getEnrolledStudentIds() != null) existingSubjectEntity.setEnrolledStudentIds(newSubject.getEnrolledStudentIds());
+        if(StringUtils.hasLength(newSubject.getIsInactive())) existingSubjectEntity.setIsInactive(newSubject.getIsInactive());
 
-        return this.subjectRepository.save(subject);
-    }
-
-    @Override
-    public List<Lecture> allLecturesBySubjectId(String subjectId) {
-        return this.lectureRepository.findAll().stream().filter(l -> l.getSubject_id().equals(subjectId)).sorted((l1, l2) -> l1.getEnded_at().after(l2.getEnded_at()) ? 1 : -1).collect(Collectors.toList());
-    }
-
-    @Override
-    public Lecture getLastLecture(String subjectId) {
-        return this.lectureRepository.getLast(subjectId);
+        return subjectMapper.toDTO(subjectRepository.save(existingSubjectEntity));
     }
 
     @Override
     public String getStaffNameAndRole(String staffId) {
-        return this.getStaffMemberById(staffId).getName_surname() + ":" + this.getStaffMemberById(staffId).getRole();
+        return staffRepository.findById(staffId).map(foundStaffMember -> String.format("%s:%s", foundStaffMember.getNameSurname(), foundStaffMember.getRole())).orElse(null);
     }
 
     @Override
-    public Lecture getLecture(String lectureId) {
-        return this.lectureRepository.findById(lectureId).get();
-    }
-
-    @Override
-    public Exercise getExercise(String exerciseId) {
-        return this.exerciseRepository.findById(exerciseId).get();
-    }
-
-    private int getTotalPractices(String subjectId) {
-        return this.exerciseRepository.getAllBySubject(subjectId);
-    }
-
-    private int getTotalLectures(String subjectId) {
-        return this.lectureRepository.getAllBySubject(subjectId);
-    }
-
-    private int getAttendedPractices(String subjectId, String index) {
-        return this.exerciseRepository.getAllAttended(subjectId, this.studentRepository.getByIndex(index).getId());
-    }
-
-    private int getAttendedLectures(String subjectId, String index) {
-        return this.lectureRepository.getAllAttended(subjectId, this.studentRepository.getByIndex(index).getId());
+    public ClassInstanceDTO getClassInstance(boolean isExercise, String id) {
+        return classInstanceMapper.toDTO(classInstanceRepository.findById((isExercise ? EXERCISES : LECTURES), id));
     }
 
     private String encryptPassword(String plain) {
         try {
             byte[] decodedKey = Base64.getDecoder().decode("8p6pyFULk8j3DV/yHJaGzw==");
             SecretKey secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
-            Cipher cipher = Cipher.getInstance("AES");
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
             cipher.init(1, secretKey);
             return Base64.getEncoder().encodeToString(cipher.doFinal(plain.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {

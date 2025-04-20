@@ -4,7 +4,7 @@ import lombok.Data;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import javax.persistence.*;
+import javax.persistence.Id;
 
 @Data
 @Document(collection = "Studies")
@@ -14,11 +14,11 @@ public class Study {
     @Field("title")
     private String title;
     @Field("title_english")
-    private String title_english;
+    private String titleEnglish;
     @Field("faculty.title")
-    private String faculty_title;
+    private String facultyTitle;
     @Field("faculty.title_english")
-    private String faculty_title_english;
+    private String facultyTitleEnglish;
     @Field("taught_in")
-    private String taught_in;
+    private String taughtIn;
 }

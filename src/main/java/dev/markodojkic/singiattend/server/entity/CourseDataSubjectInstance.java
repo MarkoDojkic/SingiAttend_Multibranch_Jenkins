@@ -1,7 +1,6 @@
 package dev.markodojkic.singiattend.server.entity;
 
 import lombok.Data;
-import org.hibernate.annotations.Type;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -10,7 +9,6 @@ import javax.persistence.Id;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import java.util.Date;
-import java.util.List;
 
 @Document(collection="Subjects")
 @Data
@@ -20,19 +18,17 @@ public class CourseDataSubjectInstance {
     @Field("title")
     private String title;
     @Field("title_english")
-    private String title_english;
+    private String titleEnglish;
     @Field("last_lecture_at")
     @Temporal(TemporalType.TIMESTAMP)
     @DateTimeFormat(style = "yyyy-MM-dd HH:mm:ss.SSS")
-    private Date last_lecture_at;
+    private Date lastLectureAt;
     @Field("last_exercise_at")
     @Temporal(TemporalType.TIMESTAMP)
     @DateTimeFormat(style = "yyyy-MM-dd HH:mm:ss.SSS")
-    private Date last_exercise_at;
-    @Type(type = "list-array")
+    private Date lastExerciseAt;
     @Field("professor")
-    private List<Staff> professor;
-    @Type(type = "list-array")
+    private Staff professor;
     @Field("assistant")
-    private List<Staff> assistant;
+    private Staff assistant;
 }
