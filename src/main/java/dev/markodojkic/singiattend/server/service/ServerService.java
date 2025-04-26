@@ -12,10 +12,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import javax.crypto.*;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -70,7 +73,7 @@ public class ServerService implements IServerService {
     }
 
     @Override
-    public boolean checkPassword(String staffId, String plainPassword) {
+    public boolean checkPasswordStaff(String staffId, String plainPassword) {
         Optional<Staff> optionalStaffEntity = staffRepository.findById(staffId);
         return optionalStaffEntity.isPresent() && encryptPassword(plainPassword).equals(optionalStaffEntity.get().getPasswordHash());
     }
@@ -137,11 +140,6 @@ public class ServerService implements IServerService {
         classInstanceRepository.save((isExercise ? EXERCISES : LECTURES), classInstance);
 
         return "SUCCESSFULLY RECORDED ATTENDANCE";
-    }
-
-    @Override
-    public boolean checkPasswordAdmin(String plainPassword) {
-        return encryptPassword(plainPassword).equals("1cfMqJGcxQ/L9LJSAk3bjk0KmDOlRLU+U2dge6iFlTY=");
     }
 
     @Override
@@ -324,10 +322,26 @@ public class ServerService implements IServerService {
         try {
             byte[] decodedKey = Base64.getDecoder().decode("8p6pyFULk8j3DV/yHJaGzw==");
             SecretKey secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+
             Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-            cipher.init(1, secretKey);
-            return Base64.getEncoder().encodeToString(cipher.doFinal(plain.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+
+            byte[] iv = new byte[12];
+            SecureRandom secureRandom = new SecureRandom();
+            secureRandom.nextBytes(iv);
+            GCMParameterSpec parameterSpec = new GCMParameterSpec(128, iv);
+
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey, parameterSpec);
+
+            byte[] cipherText = cipher.doFinal(plain.getBytes(StandardCharsets.UTF_8));
+
+            // Prepend IV to cipher text
+            byte[] encryptedWithIv = new byte[12 + cipherText.length];
+            System.arraycopy(iv, 0, encryptedWithIv, 0, 12);
+            System.arraycopy(cipherText, 0, encryptedWithIv, 12, cipherText.length);
+
+            return Base64.getEncoder().encodeToString(encryptedWithIv);
+        } catch (InvalidAlgorithmParameterException | NoSuchPaddingException | IllegalBlockSizeException |
+                 NoSuchAlgorithmException | BadPaddingException | InvalidKeyException e) {
             return "";
         }
     }

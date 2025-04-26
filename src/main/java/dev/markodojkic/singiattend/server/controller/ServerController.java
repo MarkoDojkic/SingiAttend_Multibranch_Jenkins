@@ -19,8 +19,8 @@ public class ServerController {
         this.serverService = serverService;
     }
 
-    @GetMapping("/_csrf")
-    CsrfToken csrf(CsrfToken token) {
+    @GetMapping("/csrfLogin")
+    CsrfToken csrfLogin(CsrfToken token) {
         return token;
     }
 
@@ -35,8 +35,8 @@ public class ServerController {
     }
 
     @PostMapping(value = "checkPassword/staff/{id}")
-    String checkPassword(@PathVariable String id, @RequestBody String plainPassword){
-        return this.serverService.checkPassword(id, plainPassword) ? this.serverService.getStaffNameAndRole(id) : "INVALID\n";
+    String checkPasswordStaff(@PathVariable String id, @RequestBody String plainPassword){
+        return this.serverService.checkPasswordStaff(id, plainPassword) ? this.serverService.getStaffNameAndRole(id) : "INVALID\n";
     }
 
     @PostMapping("insert/student")
@@ -67,11 +67,6 @@ public class ServerController {
     @GetMapping(value = "recordAttendance/{index}/{subjectId}/{isExercise}")
     String recordAttendance(@PathVariable String subjectId, @PathVariable String index, @PathVariable boolean isExercise){
         return this.serverService.recordAttendance(subjectId, index, isExercise);
-    }
-
-    @PostMapping(value = "checkPassword/admin")
-    String checkPassword(@RequestBody String plainPassword){
-        return this.serverService.checkPasswordAdmin(plainPassword) ? "VALID\n" : "INVALID\n";
     }
 
     @GetMapping(value = "getAttendanceData/{index}")
