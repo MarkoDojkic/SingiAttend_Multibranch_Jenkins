@@ -8,14 +8,13 @@ import java.util.List;
 public interface IServerService {
     StaffDTO addNewStaffMember(StaffDTO newStaff);
     StaffDTO updateStaffMemberById(String staffId, StaffDTO newStaff);
-    boolean checkPassword(String staffId, String plainPassword);
+    boolean checkPasswordStaff(String staffId, String plainPassword);
     StudentDTO addNewStudent(StudentDTO newStudent);
     StudentDTO updateStudentById(String studentId, StudentDTO newStudent);
     String checkPasswordStudent(String index, String plainPassword);
     String getNameSurnameStudent(String index);
     List<CourseDataInstance> getCourseData(String index) throws ParseException;
     String recordAttendance(String subjectId, String index, boolean isExercise);
-    boolean checkPasswordAdmin(String plainPassword);
     List<AttendanceDataInstance> getAttendanceData(String index);
     List<SubjectDTO> getSubjectsByProfessorId(String professorId); //Aggregation
     List<SubjectDTO> getSubjectsByAssistantId(String assistantId); //Aggregation
