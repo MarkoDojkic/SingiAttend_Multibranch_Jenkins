@@ -75,7 +75,7 @@ public class ServerService implements IServerService {
     @Override
     public boolean checkPasswordStaff(String staffId, String plainPassword) {
         Optional<Staff> optionalStaffEntity = staffRepository.findById(staffId);
-        return optionalStaffEntity.isPresent() && encryptPassword(plainPassword).equals(optionalStaffEntity.get().getPasswordHash());
+        return optionalStaffEntity.isPresent() && plainPassword.equals(decryptPassword(optionalStaffEntity.get().getPasswordHash()));
     }
 
     @Override
@@ -100,7 +100,7 @@ public class ServerService implements IServerService {
 
     @Override
     public String checkPasswordStudent(String index, String plainPassword) {
-        return studentRepository.getByIndex(index.substring(0, index.length() - 6) + "/" + index.substring(index.length() - 6)).map(foundStudent -> encryptPassword(plainPassword).equals(foundStudent.getPasswordHash()) ? "VALID" : "INVALID").orElse("UNKNOWN");
+        return studentRepository.getByIndex(index.substring(0, index.length() - 6) + "/" + index.substring(index.length() - 6)).map(foundStudent -> plainPassword.equals(decryptPassword(foundStudent.getPasswordHash())) ? "VALID" : "INVALID").orElse("UNKNOWN");
     }
 
     @Override
@@ -342,7 +342,32 @@ public class ServerService implements IServerService {
             return Base64.getEncoder().encodeToString(encryptedWithIv);
         } catch (InvalidAlgorithmParameterException | NoSuchPaddingException | IllegalBlockSizeException |
                  NoSuchAlgorithmException | BadPaddingException | InvalidKeyException e) {
-            return "";
+            return "?";
         }
     }
+
+    private String decryptPassword(String encrypted) {
+        try {
+            byte[] decodedKey = Base64.getDecoder().decode("8p6pyFULk8j3DV/yHJaGzw==");
+            SecretKey secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+
+            byte[] decoded = Base64.getDecoder().decode(encrypted);
+
+            byte[] iv = Arrays.copyOfRange(decoded, 0, 12);
+            byte[] cipherText = Arrays.copyOfRange(decoded, 12, decoded.length);
+
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            GCMParameterSpec parameterSpec = new GCMParameterSpec(128, iv);
+
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, parameterSpec);
+
+            byte[] plainText = cipher.doFinal(cipherText);
+
+            return new String(plainText, StandardCharsets.UTF_8);
+        } catch (InvalidAlgorithmParameterException | NoSuchPaddingException | IllegalBlockSizeException |
+                NoSuchAlgorithmException | BadPaddingException | InvalidKeyException e) {
+            return null;
+        }
+    }
+
 }
