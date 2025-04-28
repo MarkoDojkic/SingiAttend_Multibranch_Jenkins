@@ -1,5 +1,6 @@
 package dev.markodojkic.singiattend.server.controller;
 
+import dev.markodojkic.singiattend.server.entity.AttendanceHelperInstance;
 import dev.markodojkic.singiattend.server.model.*;
 import dev.markodojkic.singiattend.server.service.ServerService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -95,7 +96,7 @@ public class ServerController {
     }
 
     @GetMapping(value = "getAllSubjectsByProfessor/{professorId}")
-    List<SubjectDTO> getSubjectByProfessorId(@PathVariable String professorId){
+    List<AttendanceHelperInstance> getSubjectByProfessorId(@PathVariable String professorId){
         return this.serverService.getSubjectsByProfessorId(professorId);
     }
 
@@ -170,7 +171,7 @@ public class ServerController {
     }
 
     @GetMapping(value = "getAllSubjectsByAssistant/{assistantId}")
-    List<SubjectDTO> getSubjectsByAssistantId(@PathVariable String assistantId){
+    List<AttendanceHelperInstance> getSubjectsByAssistantId(@PathVariable String assistantId){
         return this.serverService.getSubjectsByAssistantId(assistantId);
     }
 
@@ -180,7 +181,7 @@ public class ServerController {
     }
 
     @GetMapping(value = "getAllSubjects")
-    List<SubjectDTO> getSubjects(){
+    List<AttendanceHelperInstance> getSubjects(){
         return this.serverService.getAllSubjects();
     }
 

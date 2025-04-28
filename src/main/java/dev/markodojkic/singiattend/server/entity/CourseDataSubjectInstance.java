@@ -1,7 +1,6 @@
 package dev.markodojkic.singiattend.server.entity;
 
 import lombok.Data;
-import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -10,7 +9,6 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import java.util.Date;
 
-@Document(collection="Subjects")
 @Data
 public class CourseDataSubjectInstance {
     @Id
@@ -27,8 +25,6 @@ public class CourseDataSubjectInstance {
     @Temporal(TemporalType.TIMESTAMP)
     @DateTimeFormat(style = "yyyy-MM-dd HH:mm:ss.SSS")
     private Date lastExerciseAt;
-    @Field("professor")
-    private Staff professor;
-    @Field("assistant")
-    private Staff assistant;
+    private String nameT;
+    private String nameA;
 }

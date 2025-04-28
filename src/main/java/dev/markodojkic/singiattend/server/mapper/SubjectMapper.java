@@ -12,6 +12,5 @@ import static org.mapstruct.MappingConstants.ComponentModel.SPRING;
 public interface SubjectMapper {
     Subject toEntity(final SubjectDTO subjectDTO);
     SubjectDTO toDTO(final Subject subject);
-
     List<SubjectDTO> toDTOList(final List<Subject> subjects);
 }
