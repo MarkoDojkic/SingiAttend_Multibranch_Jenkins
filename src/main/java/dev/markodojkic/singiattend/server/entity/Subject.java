@@ -9,6 +9,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import javax.persistence.Id;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -33,12 +34,8 @@ public class Subject {
     @Temporal(TemporalType.TIMESTAMP)
     @DateTimeFormat(style = "yyyy-MM-dd HH:mm:ss.SSS")
     private Date lastExerciseAt;
-    @Field("enrolled_students")
-    private List<String> enrolledStudentIds;
+    @Field("enrolled_student_ids")
+    private List<String> enrolledStudentIds = Collections.emptyList();
     @Field("isInactive")
-    private String isInactive;
-    @Field("professor")
-    private List<Staff> professor;
-    @Field("assistant")
-    private List<Staff> assistant;
+    private Boolean isInactive;
 }

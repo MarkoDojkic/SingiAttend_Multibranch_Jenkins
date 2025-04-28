@@ -4,6 +4,7 @@ import dev.markodojkic.singiattend.server.entity.*;
 import dev.markodojkic.singiattend.server.mapper.*;
 import dev.markodojkic.singiattend.server.model.*;
 import dev.markodojkic.singiattend.server.repository.*;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
@@ -117,12 +118,12 @@ public class ServerService implements IServerService {
 
         for(CourseDataSubjectInstance courseDataSubjectInstance: subjectRepository.getCourseDataByLectures(studentId, from, to).getMappedResults()){
             ClassInstanceDTO lecture = getLastClassInstanceBySubjectId(false, courseDataSubjectInstance.getId());
-            output.add(new CourseDataInstance(lecture.getId(),courseDataSubjectInstance.getProfessor().getNameSurname(),courseDataSubjectInstance.getTitle() + "-предавања", courseDataSubjectInstance.getTitleEnglish() + "-lecture", lecture.getStartedAt().toString(), lecture.getEndedAt().toString()));
+            output.add(new CourseDataInstance(lecture.getId(),courseDataSubjectInstance.getNameT(),courseDataSubjectInstance.getTitle() + "-предавања", courseDataSubjectInstance.getTitleEnglish() + "-lecture", lecture.getStartedAt().toString(), lecture.getEndedAt().toString()));
         }
 
         for(CourseDataSubjectInstance courseDataSubjectInstance: subjectRepository.getCourseDataByExercises(studentId, from, to).getMappedResults()){
             ClassInstanceDTO exercise = getLastClassInstanceBySubjectId(false, courseDataSubjectInstance.getId());
-            output.add(new CourseDataInstance(exercise.getId(), (courseDataSubjectInstance.getAssistant() == null ?  courseDataSubjectInstance.getProfessor().getNameSurname() : courseDataSubjectInstance.getAssistant().getNameSurname()),courseDataSubjectInstance.getTitle() + "-вежбе", courseDataSubjectInstance.getTitleEnglish() + "-practice", exercise.getStartedAt().toString(), exercise.getEndedAt().toString()));
+            output.add(new CourseDataInstance(exercise.getId(), (StringUtils.hasLength(courseDataSubjectInstance.getNameA()) ?  courseDataSubjectInstance.getNameA() : courseDataSubjectInstance.getNameT()),courseDataSubjectInstance.getTitle() + "-вежбе", courseDataSubjectInstance.getTitleEnglish() + "-practice", exercise.getStartedAt().toString(), exercise.getEndedAt().toString()));
         }
 
         return output;
@@ -147,12 +148,8 @@ public class ServerService implements IServerService {
         List<AttendanceDataInstance> output = new ArrayList<>();
         final String index_ = index.substring(0, index.length() - 6) + "/" + index.substring(index.length() - 6);
 
-        AggregationResults<AttendanceHelperInstance> attendanceHelperInstances = subjectRepository.getAttendanceHelperInstanceById(studentRepository.getByIndex(index_).map(Student::getId).orElse(""));
+        AggregationResults<AttendanceHelperInstance> attendanceHelperInstances = subjectRepository.getAttendanceHelperInstanceByStudentId(studentRepository.getByIndex(index_).map(Student::getId).orElse(""));
         for (AttendanceHelperInstance attendanceHelperInstance : attendanceHelperInstances) {
-            attendanceHelperInstance.setNameT(attendanceHelperInstance.getProfessor().getNameSurname());
-            attendanceHelperInstance.setNameA(attendanceHelperInstance.getAssistant() == null ? "" : attendanceHelperInstance.getAssistant().getNameSurname());
-            attendanceHelperInstance.setProfessor(null);
-            attendanceHelperInstance.setAssistant(null);
             int al = classInstanceRepository.getAllAttendedBySubjectIdAndStudentIdCount(LECTURES, attendanceHelperInstance.getSubjectId(), index_);
             int ap = classInstanceRepository.getAllAttendedBySubjectIdAndStudentIdCount(EXERCISES, attendanceHelperInstance.getSubjectId(), index_);
             int tl = classInstanceRepository.getAllBySubjectIdCount(LECTURES, attendanceHelperInstance.getSubjectId());
@@ -163,13 +160,13 @@ public class ServerService implements IServerService {
     }
 
     @Override
-    public List<SubjectDTO> getSubjectsByProfessorId(String professorId) {
-        return subjectMapper.toDTOList(subjectRepository.findAllAggregationByProfessorId(professorId).getMappedResults());
+    public List<AttendanceHelperInstance> getSubjectsByProfessorId(String professorId) {
+        return subjectRepository.findAllAggregationByProfessorId(professorId).getMappedResults();
     }
 
     @Override
-    public List<SubjectDTO> getSubjectsByAssistantId(String assistantId) {
-        return subjectMapper.toDTOList(subjectRepository.findAllAggregationByAssistantId(assistantId).getMappedResults());
+    public List<AttendanceHelperInstance> getSubjectsByAssistantId(String assistantId) {
+        return subjectRepository.findAllAggregationByAssistantId(assistantId).getMappedResults();
     }
 
     @Override
@@ -188,8 +185,8 @@ public class ServerService implements IServerService {
     }
 
     @Override
-    public List<SubjectDTO> getAllSubjects() {
-        return subjectMapper.toDTOList(subjectRepository.findAllAggregation().getMappedResults());
+    public List<AttendanceHelperInstance> getAllSubjects() {
+        return subjectRepository.findAllAggregation().getMappedResults();
     }
 
     @Override
@@ -215,19 +212,17 @@ public class ServerService implements IServerService {
 
     @Override
     public boolean checkIfStaffHasSubjectAssigned(String id) {
-       return subjectRepository.existsByProfessorIdOrAssistantId(id, id);
+       return subjectRepository.existsByProfessorIdOrAssistantId(new ObjectId(id), new ObjectId(id));
     }
 
     @Override
     public void deleteStaff(String staffId, boolean isAssistant) {
         if(isAssistant){
-            getSubjectsByAssistantId(staffId).forEach(s -> {
-                s.setAssistantId(s.getProfessorId());
-                updateSubjectBySubjectId(s, s.getId());
+            subjectRepository.findByAssistantId(new ObjectId(staffId)).forEach(subject -> {
+               subject.setAssistantId(subject.getProfessorId());
+               subjectRepository.save(subject);
             });
-        } else {
-            getSubjectsByProfessorId(staffId).forEach(s -> subjectRepository.deleteById(s.getId()));
-        }
+        } else getSubjectsByProfessorId(staffId).forEach(s -> subjectRepository.deleteById(s.getSubjectId()));
 
         staffRepository.deleteById(staffId);
     }
@@ -244,7 +239,7 @@ public class ServerService implements IServerService {
 
     @Override
     public boolean subjectIsInactiveById(String subjectId) {
-        return getSubjectById(subjectId).getIsInactive() == null || getSubjectById(subjectId).getIsInactive().equals("1");
+        return getSubjectById(subjectId).getIsInactive() == null || getSubjectById(subjectId).getIsInactive();
     }
 
     public List<ClassInstanceDTO> getAllClassInstancesBySubjectId(boolean isExercise, String subjectId) {
@@ -281,14 +276,14 @@ public class ServerService implements IServerService {
     public void startNewSubjectYear(String subjectId) {
         classInstanceRepository.clean(subjectId);
         SubjectDTO subject = getSubjectById(subjectId);
-        subject.setIsInactive("0");
+        subject.setIsInactive(false);
         updateSubjectBySubjectId(subject, subjectId);
     }
 
     @Override
     public void endCurrentSubjectYear(String subjectId) {
         SubjectDTO subject = getSubjectById(subjectId);
-        subject.setIsInactive("1");
+        subject.setIsInactive(true);
         updateSubjectBySubjectId(subject, subjectId);
     }
 
@@ -303,7 +298,7 @@ public class ServerService implements IServerService {
         if(newSubject.getLastLectureAt() != null) existingSubjectEntity.setLastLectureAt(newSubject.getLastLectureAt());
         if(newSubject.getLastExerciseAt() != null) existingSubjectEntity.setLastExerciseAt(newSubject.getLastExerciseAt());
         if(newSubject.getEnrolledStudentIds() != null) existingSubjectEntity.setEnrolledStudentIds(newSubject.getEnrolledStudentIds());
-        if(StringUtils.hasLength(newSubject.getIsInactive())) existingSubjectEntity.setIsInactive(newSubject.getIsInactive());
+        if(newSubject.getIsInactive() != null) existingSubjectEntity.setIsInactive(newSubject.getIsInactive());
 
         return subjectMapper.toDTO(subjectRepository.save(existingSubjectEntity));
     }
