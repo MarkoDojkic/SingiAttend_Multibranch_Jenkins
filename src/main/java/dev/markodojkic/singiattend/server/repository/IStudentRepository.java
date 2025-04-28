@@ -11,12 +11,16 @@ import java.util.Optional;
 public interface IStudentRepository extends MongoRepository<Student, String> {
     @Query(value="{'index': {$regex : ?0, $options: 'i'}}")
     Optional<Student> getByIndex(String index);
-    @Aggregation(pipeline={"{$lookup: {from:'Studies',localField:'study_id',foreignField:'_id',as:'study'}}",
-            "{ '$match': { '_id': ObjectId(?0) } }"})
+    @Aggregation(pipeline={"{ '$match': { '_id': ObjectId(?0) } }",
+            "{ $lookup: {from:'Studies',localField:'study_id',foreignField:'_id',as:'study'} }",
+            "{ $unwind: {path:'$study',preserveNullAndEmptyArrays:true} }"})
     Optional<Student> getAggregatedById(String id);
-    @Aggregation(pipeline={"{$lookup: {from:'Studies',localField:'study_id',foreignField:'_id',as:'study'}}"})
-    List<Student> findAllAggregated();
     @Aggregation(pipeline={"{$lookup: {from:'Studies',localField:'study_id',foreignField:'_id',as:'study'}}",
-            "{ '$match': { $and: [{ 'study_id': ObjectId(?0) }, { 'year':  eq(?1) }] } }"})
+            "{ $unwind: {path:'$study',preserveNullAndEmptyArrays:true} }"})
+    List<Student> findAllAggregated();
+    @Aggregation(pipeline={"{ '$match': { 'study_id': ObjectId(?0) } }",
+            "{ '$match': { 'year':  eq(?1) } }",
+            "{ $lookup: {from:'Studies',localField:'study_id',foreignField:'_id',as:'study'}}",
+            "{ $unwind: {path:'$study',preserveNullAndEmptyArrays:true} }"})
     List<Student> findByStudyIdAndYear(String studyId, int year);
 }

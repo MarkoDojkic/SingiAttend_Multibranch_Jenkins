@@ -6,7 +6,6 @@ import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.data.mongodb.core.mapping.FieldType;
 
 import javax.persistence.Id;
-import java.util.List;
 
 @Data
 @Document(collection = "Students")
@@ -26,5 +25,5 @@ public class Student {
     @Field("year")
     private String year;
     @Field("study")
-    private List<Study> study;
+    private Study study;
 }

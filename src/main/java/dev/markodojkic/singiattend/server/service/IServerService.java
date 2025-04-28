@@ -1,5 +1,6 @@
 package dev.markodojkic.singiattend.server.service;
 
+import dev.markodojkic.singiattend.server.entity.AttendanceHelperInstance;
 import dev.markodojkic.singiattend.server.model.*;
 
 import java.text.ParseException;
@@ -16,12 +17,12 @@ public interface IServerService {
     List<CourseDataInstance> getCourseData(String index) throws ParseException;
     String recordAttendance(String subjectId, String index, boolean isExercise);
     List<AttendanceDataInstance> getAttendanceData(String index);
-    List<SubjectDTO> getSubjectsByProfessorId(String professorId); //Aggregation
-    List<SubjectDTO> getSubjectsByAssistantId(String assistantId); //Aggregation
+    List<AttendanceHelperInstance> getSubjectsByProfessorId(String professorId); //Aggregation
+    List<AttendanceHelperInstance> getSubjectsByAssistantId(String assistantId); //Aggregation
     List<StaffDTO> getAllStaff(); //Query
     List<StudyDTO> getAllStudies(); //Query
     List<StudentDTO> getAllStudents(); //Aggregation
-    List<SubjectDTO> getAllSubjects(); //Query
+    List<AttendanceHelperInstance> getAllSubjects(); //Query
     SubjectDTO addNewSubject(SubjectDTO newSubject); //Insert
     int totalStudentsBySubjectId(String subjectId); //Return total number of StudentDTOs
     List<StudentDTO> getAllStudentsBySubjectIdAndAttendanceYear(String studyId, int attendanceYear); //Aggregation

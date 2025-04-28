@@ -15,11 +15,7 @@ public class AttendanceHelperInstance {
     @Field("title_english")
     private String titleEnglish;
     @Field("isInactive")
-    private String isInactive;
+    private Boolean isInactive;
     private String nameT;
     private String nameA;
-    @Field("professor")
-    private Staff professor;
-    @Field("assistant")
-    private Staff assistant;
 }
