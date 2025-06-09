@@ -1,5 +1,6 @@
 package dev.markodojkic.singiattend.server.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -24,6 +25,4 @@ public class Student {
     private String studyId;
     @Field("year")
     private String year;
-    @Field("study")
-    private Study study;
 }

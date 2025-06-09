@@ -6,6 +6,7 @@ import dev.markodojkic.singiattend.server.model.*;
 import dev.markodojkic.singiattend.server.repository.*;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
@@ -42,7 +43,7 @@ public class ServerService implements IServerService {
     private final ISubjectRepository subjectRepository;
 
     @Autowired
-    public ServerService(ClassInstanceMapper classInstanceMapper, StaffMapper staffMapper, StudentMapper studentMapper, StudyMapper studyMapper, SubjectMapper subjectMapper, ClassInstanceRepository classInstanceRepository, IStaffRepository staffRepository, IStudentRepository studentRepository, IStudyRepository studyRepository, ISubjectRepository subjectRepository) {
+    public ServerService(ClassInstanceMapper classInstanceMapper, StaffMapper staffMapper, @Qualifier("studentMapperDecorator") StudentMapper studentMapper, StudyMapper studyMapper, @Qualifier("subjectMapperDecorator") SubjectMapper subjectMapper, ClassInstanceRepository classInstanceRepository, IStaffRepository staffRepository, IStudentRepository studentRepository, IStudyRepository studyRepository, ISubjectRepository subjectRepository) {
         this.classInstanceMapper = classInstanceMapper;
         this.staffMapper = staffMapper;
         this.studentMapper = studentMapper;
@@ -57,6 +58,7 @@ public class ServerService implements IServerService {
 
     @Override
     public StaffDTO addNewStaffMember(StaffDTO newStaff) {
+        if(staffRepository.getByEmail(newStaff.getEmail()).isPresent()) return null;
         Staff newStaffEntity = staffMapper.toEntity(newStaff);
         newStaffEntity.setPasswordHash(encryptPassword(newStaff.getPasswordHash()));
         return staffMapper.toDTO(staffRepository.save(newStaffEntity));
@@ -81,6 +83,7 @@ public class ServerService implements IServerService {
 
     @Override
     public StudentDTO addNewStudent(StudentDTO newStudent) {
+        if(studentRepository.getByIndex(newStudent.getIndex()).isPresent()) return null;
         Student newStudentEntity = studentMapper.toEntity(newStudent);
         newStudentEntity.setPasswordHash(encryptPassword(newStudent.getPasswordHash()));
         return studentMapper.toDTO(studentRepository.save(newStudentEntity));
@@ -111,34 +114,33 @@ public class ServerService implements IServerService {
 
     @Override
     public List<CourseDataInstance> getCourseData(String index) {
-        final String studentId = studentRepository.getByIndex(index.substring(0, index.length() - 6) + "/" + index.substring(index.length() - 6)).map(Student::getId).orElse("");
+        final String criteria = studentRepository.getByIndex(index.substring(0, index.length() - 6) + "/" + index.substring(index.length() - 6)).map(student -> String.format("%s_%s", student.getStudyId(), student.getYear())).orElse("");
         List<CourseDataInstance> output = new ArrayList<>();
         final Date from = Date.from(Instant.now().minus(15, ChronoUnit.MINUTES));
         final Date to = Date.from(Instant.now());
 
-        for(CourseDataSubjectInstance courseDataSubjectInstance: subjectRepository.getCourseDataByLectures(studentId, from, to).getMappedResults()){
+        for(CourseDataSubjectInstance courseDataSubjectInstance: subjectRepository.getCourseDataByLectures(criteria, from, to).getMappedResults()){
             ClassInstanceDTO lecture = getLastClassInstanceBySubjectId(false, courseDataSubjectInstance.getId());
-            output.add(new CourseDataInstance(lecture.getId(),courseDataSubjectInstance.getNameT(),courseDataSubjectInstance.getTitle() + "-предавања", courseDataSubjectInstance.getTitleEnglish() + "-lecture", lecture.getStartedAt().toString(), lecture.getEndedAt().toString()));
+            if(lecture != null) output.add(new CourseDataInstance(lecture.getId(),courseDataSubjectInstance.getNameT(),courseDataSubjectInstance.getTitle() + "-предавања", courseDataSubjectInstance.getTitleEnglish() + "-lecture", lecture.getStartedAt().toString(), lecture.getEndedAt().toString()));
         }
 
-        for(CourseDataSubjectInstance courseDataSubjectInstance: subjectRepository.getCourseDataByExercises(studentId, from, to).getMappedResults()){
+        for(CourseDataSubjectInstance courseDataSubjectInstance: subjectRepository.getCourseDataByExercises(criteria, from, to).getMappedResults()){
             ClassInstanceDTO exercise = getLastClassInstanceBySubjectId(false, courseDataSubjectInstance.getId());
-            output.add(new CourseDataInstance(exercise.getId(), (StringUtils.hasLength(courseDataSubjectInstance.getNameA()) ?  courseDataSubjectInstance.getNameA() : courseDataSubjectInstance.getNameT()),courseDataSubjectInstance.getTitle() + "-вежбе", courseDataSubjectInstance.getTitleEnglish() + "-practice", exercise.getStartedAt().toString(), exercise.getEndedAt().toString()));
+            if(exercise != null) output.add(new CourseDataInstance(exercise.getId(), (StringUtils.hasLength(courseDataSubjectInstance.getNameA()) ?  courseDataSubjectInstance.getNameA() : courseDataSubjectInstance.getNameT()),courseDataSubjectInstance.getTitle() + "-вежбе", courseDataSubjectInstance.getTitleEnglish() + "-practice", exercise.getStartedAt().toString(), exercise.getEndedAt().toString()));
         }
 
         return output;
     }
 
     @Override
-    public String recordAttendance(String subjectId, String index, boolean isExercise) {
+    public String recordAttendance(String id, String index, boolean isExercise) {
         final String studentId = studentRepository.getByIndex(index.substring(0, index.length() - 6) + "/" + index.substring(index.length() - 6)).map(Student::getId).orElse("");
-
-        ClassInstance classInstance = classInstanceRepository.getLastBySubjectId((isExercise ? EXERCISES : LECTURES), subjectId);
+        if(studentId.isEmpty()) return "";
+        ClassInstance classInstance = classInstanceRepository.findById((isExercise ? EXERCISES : LECTURES), id);
         var attendedStudents = classInstance.getAttendedStudents();
         if(attendedStudents.contains(studentId)) return "ALREADY RECORDED ATTENDANCE";
         attendedStudents.add(studentId);
-        classInstance.setAttendedStudents(attendedStudents);
-        classInstanceRepository.save((isExercise ? EXERCISES : LECTURES), classInstance);
+        classInstanceRepository.updateAttendedStudents((isExercise ? EXERCISES : LECTURES), classInstance.getId(), attendedStudents);
 
         return "SUCCESSFULLY RECORDED ATTENDANCE";
     }
@@ -148,7 +150,7 @@ public class ServerService implements IServerService {
         List<AttendanceDataInstance> output = new ArrayList<>();
         final String index_ = index.substring(0, index.length() - 6) + "/" + index.substring(index.length() - 6);
 
-        AggregationResults<AttendanceHelperInstance> attendanceHelperInstances = subjectRepository.getAttendanceHelperInstanceByStudentId(studentRepository.getByIndex(index_).map(Student::getId).orElse(""));
+        AggregationResults<AttendanceHelperInstance> attendanceHelperInstances = subjectRepository.getAttendanceHelperInstanceByStudentId(studentRepository.getByIndex(index_).map(student -> String.format("%s_%s", student.getStudyId(), student.getYear())).orElse(""));
         for (AttendanceHelperInstance attendanceHelperInstance : attendanceHelperInstances) {
             int al = classInstanceRepository.getAllAttendedBySubjectIdAndStudentIdCount(LECTURES, attendanceHelperInstance.getSubjectId(), index_);
             int ap = classInstanceRepository.getAllAttendedBySubjectIdAndStudentIdCount(EXERCISES, attendanceHelperInstance.getSubjectId(), index_);
@@ -191,13 +193,20 @@ public class ServerService implements IServerService {
 
     @Override
     public SubjectDTO addNewSubject(SubjectDTO newSubject) {
-        //int is added as NumberInt, and _class property is added for all classes (can be ignored)
         return subjectMapper.toDTO(subjectRepository.save(subjectMapper.toEntity(newSubject)));
     }
 
     @Override
     public int totalStudentsBySubjectId(String subjectId) {
-        return subjectRepository.findById(subjectId).map(subject -> subject.getEnrolledStudentIds().size()).orElse(-1);
+        return subjectRepository.findById(subjectId)
+                .map(subject -> subject.getEnrolledStudyIds().stream()
+                        .mapToInt(studyIdWithYear -> {
+                            String[] parts = studyIdWithYear.split("_");
+                            return getAllStudentsBySubjectIdAndAttendanceYear(parts[0], Integer.parseInt(parts[1])).size();
+                        })
+                        .sum()
+                )
+                .orElse(-1);
     }
 
     @Override
@@ -259,7 +268,7 @@ public class ServerService implements IServerService {
         Date beginsAtUTC = Date.from(LocalDateTime.of(LocalDate.now(), LocalTime.parse(begin, DateTimeFormatter.ofPattern("HH:mm"))).atZone(ZoneId.of("Europe/Belgrade")).withZoneSameInstant(ZoneId.of("UTC")).toInstant());
         Date endsAtUTC = Date.from(LocalDateTime.of(LocalDate.now(), LocalTime.parse(end, DateTimeFormatter.ofPattern("HH:mm"))).atZone(ZoneId.of("Europe/Belgrade")).withZoneSameInstant(ZoneId.of("UTC")).toInstant());
 
-        classInstanceRepository.save((isExercise ? EXERCISES : LECTURES), new ClassInstance(subjectId, beginsAtUTC, endsAtUTC));
+        classInstanceRepository.insert(new ClassInstance(subjectId, beginsAtUTC, endsAtUTC), (isExercise ? EXERCISES : LECTURES));
         if(isExercise) subject.setLastExerciseAt(beginsAtUTC);
         else subject.setLastLectureAt(beginsAtUTC);
         updateSubjectBySubjectId(subjectMapper.toDTO(subject), subjectId);
@@ -297,7 +306,7 @@ public class ServerService implements IServerService {
         if(StringUtils.hasLength(newSubject.getAssistantId())) existingSubjectEntity.setAssistantId(newSubject.getAssistantId().equals("-1") ? null : newSubject.getAssistantId());
         if(newSubject.getLastLectureAt() != null) existingSubjectEntity.setLastLectureAt(newSubject.getLastLectureAt());
         if(newSubject.getLastExerciseAt() != null) existingSubjectEntity.setLastExerciseAt(newSubject.getLastExerciseAt());
-        if(newSubject.getEnrolledStudentIds() != null) existingSubjectEntity.setEnrolledStudentIds(newSubject.getEnrolledStudentIds());
+        if(newSubject.getEnrolledStudyIds() != null) existingSubjectEntity.setEnrolledStudyIds(newSubject.getEnrolledStudyIds());
         if(newSubject.getIsInactive() != null) existingSubjectEntity.setIsInactive(newSubject.getIsInactive());
 
         return subjectMapper.toDTO(subjectRepository.save(existingSubjectEntity));
@@ -364,5 +373,4 @@ public class ServerService implements IServerService {
             return null;
         }
     }
-
 }

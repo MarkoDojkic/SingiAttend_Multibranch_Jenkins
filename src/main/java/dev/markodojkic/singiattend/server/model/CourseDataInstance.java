@@ -6,7 +6,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class CourseDataInstance {
-    private String subjectId;
+    private String id;
     private String nameSurname;
     private String subject;
     private String subjectEnglish;
