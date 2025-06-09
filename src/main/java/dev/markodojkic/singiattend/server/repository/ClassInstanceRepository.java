@@ -1,12 +1,14 @@
 package dev.markodojkic.singiattend.server.repository;
 
 import dev.markodojkic.singiattend.server.entity.ClassInstance;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -23,13 +25,23 @@ public class ClassInstanceRepository implements IClassInstanceRepository {
     }
 
     @Override
-    public void save(String collection, ClassInstance classInstance) {
+    public void insert(ClassInstance classInstance, String collection) {
         mongoTemplate.insert(classInstance, collection);
     }
 
     @Override
+    public void updateAttendedStudents(String collection, String id, List<String> newAttendedStudents) {
+        Query query = new Query(Criteria.where("_id").is(id)); // or any unique field
+        Update update = new Update();
+
+        update.set("attended_students", newAttendedStudents);
+
+        mongoTemplate.upsert(query, update, ClassInstance.class, collection);
+    }
+
+    @Override
     public ClassInstance findById(String collection, String id) {
-        return mongoTemplate.findById(id, ClassInstance.class, collection);
+        return mongoTemplate.findById(new ObjectId(id), ClassInstance.class, collection);
     }
 
     @Override

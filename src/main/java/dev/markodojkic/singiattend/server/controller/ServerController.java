@@ -65,9 +65,9 @@ public class ServerController {
         return this.serverService.getCourseData(index);
     }
 
-    @GetMapping(value = "recordAttendance/{index}/{subjectId}/{isExercise}")
-    String recordAttendance(@PathVariable String subjectId, @PathVariable String index, @PathVariable boolean isExercise){
-        return this.serverService.recordAttendance(subjectId, index, isExercise);
+    @GetMapping(value = "recordAttendance/{index}/{id}/{isExercise}")
+    String recordAttendance(@PathVariable String id, @PathVariable String index, @PathVariable boolean isExercise){
+        return this.serverService.recordAttendance(id, index, isExercise);
     }
 
     @GetMapping(value = "getAttendanceData/{index}")
@@ -86,7 +86,7 @@ public class ServerController {
     }
 
     @PostMapping(value = "addNewSubject")
-    SubjectDTO getAllStudies(@RequestBody SubjectDTO newSubjectData){
+    SubjectDTO addNewSubject(@RequestBody SubjectDTO newSubjectData){
         return this.serverService.addNewSubject(newSubjectData);
     }
 

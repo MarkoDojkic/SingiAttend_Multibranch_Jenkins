@@ -19,5 +19,6 @@ public class SubjectDTO implements Serializable {
     private Date lastLectureAt;
     private Date lastExerciseAt;
     private transient List<String> enrolledStudentIds;
+    private transient List<String> enrolledStudyIds;
     private Boolean isInactive;
 }

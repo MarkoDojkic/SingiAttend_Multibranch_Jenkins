@@ -34,8 +34,8 @@ public class Subject {
     @Temporal(TemporalType.TIMESTAMP)
     @DateTimeFormat(style = "yyyy-MM-dd HH:mm:ss.SSS")
     private Date lastExerciseAt;
-    @Field("enrolled_student_ids")
-    private List<String> enrolledStudentIds = Collections.emptyList();
+    @Field("enrolled_study_ids")
+    private List<String> enrolledStudyIds = Collections.emptyList(); //format studyID_takingYear
     @Field("isInactive")
     private Boolean isInactive;
 }
