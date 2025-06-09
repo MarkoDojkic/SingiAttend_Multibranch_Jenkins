@@ -5,7 +5,8 @@ import dev.markodojkic.singiattend.server.entity.ClassInstance;
 import java.util.List;
 
 public interface IClassInstanceRepository {
-    void save(String collection, ClassInstance classInstance);
+    void insert(ClassInstance classInstance, String collection);
+    void updateAttendedStudents(String collection, String id, List<String> newAttendedStudents);
     void clean(String subjectId);
     ClassInstance getLastBySubjectId(String collection, String subjectId);
     List<ClassInstance> getAllBySubjectId(String collection, String subjectId);

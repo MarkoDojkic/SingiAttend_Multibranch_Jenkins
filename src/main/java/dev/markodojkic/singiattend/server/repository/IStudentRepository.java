@@ -19,7 +19,7 @@ public interface IStudentRepository extends MongoRepository<Student, String> {
             "{ $unwind: {path:'$study',preserveNullAndEmptyArrays:true} }"})
     List<Student> findAllAggregated();
     @Aggregation(pipeline={"{ '$match': { 'study_id': ObjectId(?0) } }",
-            "{ '$match': { 'year':  eq(?1) } }",
+            "{ '$match': { 'year':  '?1' } }",
             "{ $lookup: {from:'Studies',localField:'study_id',foreignField:'_id',as:'study'}}",
             "{ $unwind: {path:'$study',preserveNullAndEmptyArrays:true} }"})
     List<Student> findByStudyIdAndYear(String studyId, int year);
