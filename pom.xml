@@ -10,7 +10,7 @@
     </parent>
     <groupId>dev.markodojkic</groupId>
     <artifactId>SingiAttend-Server</artifactId>
-    <version>2.5.0</version>
+    <version>2.5.0-FINAL</version>
     <name>SingiAttend</name>
     <description>SingiAttend REST backend server</description>
     <properties>

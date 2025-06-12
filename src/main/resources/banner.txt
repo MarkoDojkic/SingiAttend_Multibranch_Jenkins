@@ -10,4 +10,4 @@
                                 (___,/'
 ${application.title} ${application.version}
 Powered by Spring Boot ${spring-boot.version}
-Copyright Marko Dojkić (2018/201682) 2020-2022 - App is part of my bachelor thesis
+Copyright Marko Dojkić (2018/201682) 2020-2025 - App is part of my bachelor thesis
