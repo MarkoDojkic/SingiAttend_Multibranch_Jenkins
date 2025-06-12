@@ -46,8 +46,8 @@ public class ClassInstanceRepository implements IClassInstanceRepository {
 
     @Override
     public void clean(String subjectId) {
-        mongoTemplate.findAndRemove(new Query(Criteria.where(SUBJECT_ID).is(subjectId)), ClassInstance.class, "Lectures");
-        mongoTemplate.findAndRemove(new Query(Criteria.where(SUBJECT_ID).is(subjectId)), ClassInstance.class, "Exercises");
+        mongoTemplate.findAllAndRemove(new Query(Criteria.where(SUBJECT_ID).is(subjectId)), ClassInstance.class, "Lectures");
+        mongoTemplate.findAllAndRemove(new Query(Criteria.where(SUBJECT_ID).is(subjectId)), ClassInstance.class, "Exercises");
     }
 
     @Override

@@ -104,29 +104,29 @@ public class ServerService implements IServerService {
 
     @Override
     public String checkPasswordStudent(String index, String plainPassword) {
-        return studentRepository.getByIndex(index.substring(0, index.length() - 6) + "/" + index.substring(index.length() - 6)).map(foundStudent -> plainPassword.equals(decryptPassword(foundStudent.getPasswordHash())) ? "VALID" : "INVALID").orElse("UNKNOWN");
+        return studentRepository.getByIndex(String.format("%s/%s", index.substring(0, index.length() - 6), index.substring(index.length() - 6))).map(foundStudent -> plainPassword.equals(decryptPassword(foundStudent.getPasswordHash())) ? "VALID" : "INVALID").orElse("UNKNOWN");
     }
 
     @Override
     public String getNameSurnameStudent(String index) {
-        return studentRepository.getByIndex(index.substring(0, index.length() - 6) + "/" + index.substring(index.length() - 6)).map(Student::getNameSurname).orElse("-???-");
+        return studentRepository.getByIndex(String.format("%s/%s", index.substring(0, index.length() - 6), index.substring(index.length() - 6))).map(Student::getNameSurname).orElse("-???-");
     }
 
     @Override
     public List<CourseDataInstance> getCourseData(String index) {
-        final String criteria = studentRepository.getByIndex(index.substring(0, index.length() - 6) + "/" + index.substring(index.length() - 6)).map(student -> String.format("%s_%s", student.getStudyId(), student.getYear())).orElse("");
+        final String criteria = studentRepository.getByIndex(String.format("%s/%s", index.substring(0, index.length() - 6), index.substring(index.length() - 6))).map(student -> String.format("%s_%s", student.getStudyId(), student.getYear())).orElse("");
         List<CourseDataInstance> output = new ArrayList<>();
         final Date from = Date.from(Instant.now().minus(15, ChronoUnit.MINUTES));
         final Date to = Date.from(Instant.now());
 
         for(CourseDataSubjectInstance courseDataSubjectInstance: subjectRepository.getCourseDataByLectures(criteria, from, to).getMappedResults()){
             ClassInstanceDTO lecture = getLastClassInstanceBySubjectId(false, courseDataSubjectInstance.getId());
-            if(lecture != null) output.add(new CourseDataInstance(lecture.getId(),courseDataSubjectInstance.getNameT(),courseDataSubjectInstance.getTitle() + "-предавања", courseDataSubjectInstance.getTitleEnglish() + "-lecture", lecture.getStartedAt().toString(), lecture.getEndedAt().toString()));
+            if(lecture != null) output.add(new CourseDataInstance(lecture.getId(),courseDataSubjectInstance.getNameT(), String.format("%s-предавања", courseDataSubjectInstance.getTitle()), String.format("%s-lecture", courseDataSubjectInstance.getTitleEnglish()), lecture.getStartedAt().toString(), lecture.getEndedAt().toString()));
         }
 
         for(CourseDataSubjectInstance courseDataSubjectInstance: subjectRepository.getCourseDataByExercises(criteria, from, to).getMappedResults()){
-            ClassInstanceDTO exercise = getLastClassInstanceBySubjectId(false, courseDataSubjectInstance.getId());
-            if(exercise != null) output.add(new CourseDataInstance(exercise.getId(), (StringUtils.hasLength(courseDataSubjectInstance.getNameA()) ?  courseDataSubjectInstance.getNameA() : courseDataSubjectInstance.getNameT()),courseDataSubjectInstance.getTitle() + "-вежбе", courseDataSubjectInstance.getTitleEnglish() + "-practice", exercise.getStartedAt().toString(), exercise.getEndedAt().toString()));
+            ClassInstanceDTO exercise = getLastClassInstanceBySubjectId(true, courseDataSubjectInstance.getId());
+            if(exercise != null) output.add(new CourseDataInstance(exercise.getId(), (StringUtils.hasLength(courseDataSubjectInstance.getNameA()) ?  courseDataSubjectInstance.getNameA() : courseDataSubjectInstance.getNameT()),String.format("%s-вежбе", courseDataSubjectInstance.getTitle()), String.format("%s-practice", courseDataSubjectInstance.getTitleEnglish()), exercise.getStartedAt().toString(), exercise.getEndedAt().toString()));
         }
 
         return output;
@@ -134,7 +134,7 @@ public class ServerService implements IServerService {
 
     @Override
     public String recordAttendance(String id, String index, boolean isExercise) {
-        final String studentId = studentRepository.getByIndex(index.substring(0, index.length() - 6) + "/" + index.substring(index.length() - 6)).map(Student::getId).orElse("");
+        final String studentId = studentRepository.getByIndex(String.format("%s/%s", index.substring(0, index.length() - 6), index.substring(index.length() - 6))).map(Student::getId).orElse("");
         if(studentId.isEmpty()) return "";
         ClassInstance classInstance = classInstanceRepository.findById((isExercise ? EXERCISES : LECTURES), id);
         var attendedStudents = classInstance.getAttendedStudents();
@@ -148,12 +148,13 @@ public class ServerService implements IServerService {
     @Override
     public List<AttendanceDataInstance> getAttendanceData(String index) {
         List<AttendanceDataInstance> output = new ArrayList<>();
-        final String index_ = index.substring(0, index.length() - 6) + "/" + index.substring(index.length() - 6);
+        Student student = studentRepository.getByIndex(String.format("%s/%s", index.substring(0, index.length() - 6), index.substring(index.length() - 6))).orElse(null);
+        if(student == null) return output;
 
-        AggregationResults<AttendanceHelperInstance> attendanceHelperInstances = subjectRepository.getAttendanceHelperInstanceByStudentId(studentRepository.getByIndex(index_).map(student -> String.format("%s_%s", student.getStudyId(), student.getYear())).orElse(""));
+        AggregationResults<AttendanceHelperInstance> attendanceHelperInstances = subjectRepository.getAttendanceHelperInstance(String.format("%s_%s", student.getStudyId(), student.getYear()));
         for (AttendanceHelperInstance attendanceHelperInstance : attendanceHelperInstances) {
-            int al = classInstanceRepository.getAllAttendedBySubjectIdAndStudentIdCount(LECTURES, attendanceHelperInstance.getSubjectId(), index_);
-            int ap = classInstanceRepository.getAllAttendedBySubjectIdAndStudentIdCount(EXERCISES, attendanceHelperInstance.getSubjectId(), index_);
+            int al = classInstanceRepository.getAllAttendedBySubjectIdAndStudentIdCount(LECTURES, attendanceHelperInstance.getSubjectId(), student.getId());
+            int ap = classInstanceRepository.getAllAttendedBySubjectIdAndStudentIdCount(EXERCISES, attendanceHelperInstance.getSubjectId(), student.getId());
             int tl = classInstanceRepository.getAllBySubjectIdCount(LECTURES, attendanceHelperInstance.getSubjectId());
             int tp = classInstanceRepository.getAllBySubjectIdCount(EXERCISES, attendanceHelperInstance.getSubjectId());
             output.add(new AttendanceDataInstance(attendanceHelperInstance, al, ap, tl, tp));

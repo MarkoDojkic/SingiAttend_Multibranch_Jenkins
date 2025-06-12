@@ -11,7 +11,6 @@ import java.util.List;
 
 @RestController()
 @RequestMapping("/api")
-@CrossOrigin(origins = {"https://localhost:8080", "https://localhost:62810"}, allowCredentials = "true")
 public class ServerController {
     private final ServerService serverService;
 

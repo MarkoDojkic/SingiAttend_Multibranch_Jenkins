@@ -7,13 +7,11 @@ import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.repository.Aggregation;
 import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 import org.springframework.lang.Nullable;
 
 import java.util.Date;
 import java.util.List;
 
-@EnableMongoRepositories
 public interface ISubjectRepository extends MongoRepository<Subject, String> {
     @Aggregation(pipeline={"{$match: {enrolled_study_ids: {$in:  ['?0'] } } }",
             "{ $lookup: {from:'Staff',localField:'professor_id',foreignField:'_id',as:'professor'}}",
@@ -23,7 +21,7 @@ public interface ISubjectRepository extends MongoRepository<Subject, String> {
             "{ $addFields: { nameT: '$professor.name_surname', nameA: '$assistant.name_surname' } }",
             "{ $project: { 'professor':0, 'assistant':0, 'professor_id':0,'assistant_id':0,'enrolled_study_ids':0, 'last_lecture_at':0, 'last_exercise_at':0 } }"
     })
-    AggregationResults<AttendanceHelperInstance> getAttendanceHelperInstanceByStudentId(String id);
+    AggregationResults<AttendanceHelperInstance> getAttendanceHelperInstance(String enrolledStudyId);
 
     @Aggregation(pipeline={"{$match: {enrolled_study_ids: {$in:  [?0] } } }",
             "{ $match : { 'last_lecture_at' : { $gte: ?1, $lte: ?2 } } }",
@@ -34,7 +32,7 @@ public interface ISubjectRepository extends MongoRepository<Subject, String> {
             "{ $addFields: { nameT: '$professor.name_surname', nameA: '$assistant.name_surname' } }",
             "{ $project: { 'professor':0, 'assistant':0, 'professor_id':0,'assistant_id':0,'enrolled_study_ids':0 } }"
     })
-    AggregationResults<CourseDataSubjectInstance> getCourseDataByLectures(String studentId, Date from, Date to);
+    AggregationResults<CourseDataSubjectInstance> getCourseDataByLectures(String enrolledStudyId, Date from, Date to);
 
     @Aggregation(pipeline={"{$match: {enrolled_study_ids: {$in:  [?0] } } }",
             "{ $match : { 'last_exercise_at' : { $gte: ?1, $lte: ?2 } } }",
@@ -45,7 +43,7 @@ public interface ISubjectRepository extends MongoRepository<Subject, String> {
             "{ $addFields: { nameT: '$professor.name_surname', nameA: '$assistant.name_surname' } }",
             "{ $project: { 'professor':0, 'assistant':0, 'professor_id':0,'assistant_id':0,'enrolled_study_ids':0 } }"
     })
-    AggregationResults<CourseDataSubjectInstance> getCourseDataByExercises(String studentId, Date from, Date to);
+    AggregationResults<CourseDataSubjectInstance> getCourseDataByExercises(String enrolledStudyId, Date from, Date to);
 
     @Aggregation(pipeline={"{ $lookup: {from:'Staff',localField:'professor_id',foreignField:'_id',as:'professor'}}",
             "{ $lookup: {from:'Staff',localField:'assistant_id',foreignField:'_id',as:'assistant'}}",
