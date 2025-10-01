@@ -7,4 +7,4 @@ until curl -s http://localhost:8761/eureka/apps > /dev/null; do
 done
 
 echo "Eureka is up. Starting SingiAttend BE..."
-exec java -jar /var/www/SingiAttend-Server-2.5.0-FINAL.jar
+exec java -jar /var/www/SingiAttend-Server.jar
