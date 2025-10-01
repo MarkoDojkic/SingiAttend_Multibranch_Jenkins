@@ -1,0 +1,30 @@
+<div class="modal fade" id="proxyIdentifierModal" tabindex="-1" aria-labelledby="proxyIdentifierModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center p-3">
+            <form method="POST" class="w-25">
+                <div style="padding: 15px; margin-bottom: -20px;">
+                    <h5 class="modal-title w-100" id="proxyIdentifierModalLabel">{proxyIdentifierModalLabel}</h5>
+                </div>
+                <div class="modal-body py-2">
+                    <div class="d-flex justify-content-center gap-3 flex-wrap">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="proxyIdentifier" value="SingidunumBG" required id="bg">
+                            <label class="form-check-label" for="bg">{bg}</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="proxyIdentifier" value="SingidunumNS" id="ns">
+                            <label class="form-check-label" for="ns">{ns}</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="proxyIdentifier" value="SingidunumNIS" id="nis">
+                            <label class="form-check-label" for="nis">{nis}</label>
+                        </div>
+                    </div>
+                </div>
+                <div style="padding: 15px; margin-top: -20px;">
+                    <button type="submit" class="btn btn-primary px-4">{confirm}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
