@@ -42,7 +42,6 @@ public class ServerService implements IServerService {
     private final IStudyRepository studyRepository;
     private final ISubjectRepository subjectRepository;
 
-    @Autowired
     public ServerService(ClassInstanceMapper classInstanceMapper, StaffMapper staffMapper, @Qualifier("studentMapperDecorator") StudentMapper studentMapper, StudyMapper studyMapper, @Qualifier("subjectMapperDecorator") SubjectMapper subjectMapper, ClassInstanceRepository classInstanceRepository, IStaffRepository staffRepository, IStudentRepository studentRepository, IStudyRepository studyRepository, ISubjectRepository subjectRepository) {
         this.classInstanceMapper = classInstanceMapper;
         this.staffMapper = staffMapper;
@@ -266,8 +265,14 @@ public class ServerService implements IServerService {
         Subject subject = subjectRepository.findById(subjectId).orElse(null);
         if(subject == null) return;
 
-        Date beginsAtUTC = Date.from(LocalDateTime.of(LocalDate.now(), LocalTime.parse(begin, DateTimeFormatter.ofPattern("HH:mm"))).atZone(ZoneId.of("Europe/Belgrade")).withZoneSameInstant(ZoneId.of("UTC")).toInstant());
-        Date endsAtUTC = Date.from(LocalDateTime.of(LocalDate.now(), LocalTime.parse(end, DateTimeFormatter.ofPattern("HH:mm"))).atZone(ZoneId.of("Europe/Belgrade")).withZoneSameInstant(ZoneId.of("UTC")).toInstant());
+        Date beginsAtUTC = Date.from(LocalDate.now()
+                .atTime(LocalTime.parse(begin, DateTimeFormatter.ofPattern("HH:mm")))
+                .atZone(ZoneId.systemDefault())
+                .toInstant());
+        Date endsAtUTC = Date.from(LocalDate.now()
+                .atTime(LocalTime.parse(end, DateTimeFormatter.ofPattern("HH:mm")))
+                .atZone(ZoneId.systemDefault())
+                .toInstant());
 
         classInstanceRepository.insert(new ClassInstance(subjectId, beginsAtUTC, endsAtUTC), (isExercise ? EXERCISES : LECTURES));
         if(isExercise) subject.setLastExerciseAt(beginsAtUTC);
@@ -277,9 +282,7 @@ public class ServerService implements IServerService {
 
     @Override
     public List<StaffDTO> getAllAssistants() {
-        Staff probe = new Staff();
-        probe.setRole("assistant");
-        return staffMapper.toDTOList(staffRepository.findAll(Example.of(probe, ExampleMatcher.matching().withStringMatcher(ExampleMatcher.StringMatcher.EXACT))));
+        return staffMapper.toDTOList(staffRepository.findAllByRole("assistant"));
     }
 
     @Override

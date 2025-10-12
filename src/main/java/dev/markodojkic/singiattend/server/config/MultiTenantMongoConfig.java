@@ -2,6 +2,7 @@ package dev.markodojkic.singiattend.server.config;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.markodojkic.singiattend.server.exception.TenantConfigurationException;
 import dev.markodojkic.singiattend.server.multitenant.MultiTenantMongoDatabaseFactory;
 import dev.markodojkic.singiattend.server.multitenant.TenantFilter;
 import jakarta.annotation.PostConstruct;
@@ -15,10 +16,8 @@ import org.springframework.core.Ordered;
 import org.springframework.data.mongodb.MongoDatabaseFactory;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.SimpleMongoClientDatabaseFactory;
-import org.springframework.data.mongodb.core.convert.DbRefResolver;
-import org.springframework.data.mongodb.core.convert.DefaultDbRefResolver;
-import org.springframework.data.mongodb.core.convert.DefaultMongoTypeMapper;
-import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
+import org.springframework.data.mongodb.core.convert.*;
+import org.springframework.util.function.ThrowingConsumer;
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 
@@ -51,7 +50,7 @@ public class MultiTenantMongoConfig {
                 log.info("Registered tenant [{}] with DB [{}]", tenantId, dbName);
             }
         } catch (Exception e) {
-            throw new RuntimeException("Failed to parse tenant factories JSON", e);
+            throw new TenantConfigurationException("Failed to parse tenant factories JSON", e);
         }
     }
 

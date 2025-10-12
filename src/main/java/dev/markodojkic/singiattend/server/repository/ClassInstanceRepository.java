@@ -2,10 +2,11 @@ package dev.markodojkic.singiattend.server.repository;
 
 import dev.markodojkic.singiattend.server.entity.ClassInstance;
 import org.bson.types.ObjectId;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.TypedAggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -19,7 +20,6 @@ public class ClassInstanceRepository implements IClassInstanceRepository {
 
     private final MongoTemplate mongoTemplate;
 
-    @Autowired
     public ClassInstanceRepository(MongoTemplate mongoTemplate) {
         this.mongoTemplate = mongoTemplate;
     }
@@ -46,34 +46,44 @@ public class ClassInstanceRepository implements IClassInstanceRepository {
 
     @Override
     public void clean(String subjectId) {
-        mongoTemplate.findAllAndRemove(new Query(Criteria.where(SUBJECT_ID).is(subjectId)), ClassInstance.class, "Lectures");
-        mongoTemplate.findAllAndRemove(new Query(Criteria.where(SUBJECT_ID).is(subjectId)), ClassInstance.class, "Exercises");
+        Query query = Query.query(Criteria.where(SUBJECT_ID).is(subjectId));
+        mongoTemplate.remove(query, ClassInstance.class, "Lectures");
+        mongoTemplate.remove(query, ClassInstance.class, "Exercises");
     }
 
     @Override
     public ClassInstance getLastBySubjectId(String collection, String subjectId) {
-        return mongoTemplate.aggregate(Aggregation.newAggregation(Aggregation.sort(Sort.Direction.DESC, "ended_at"),
+        TypedAggregation<ClassInstance> aggregation = Aggregation.newAggregation(ClassInstance.class,
+                Aggregation.sort(Sort.Direction.DESC, "ended_at"),
                 Aggregation.match(Criteria.where(SUBJECT_ID).is(subjectId)),
-                Aggregation.limit(1)), collection, ClassInstance.class).getUniqueMappedResult();
+                Aggregation.limit(1));
+        
+        AggregationResults<ClassInstance> results = mongoTemplate.aggregate(aggregation, collection, ClassInstance.class);
+        return results.getUniqueMappedResult();
     }
 
     @Override
     public List<ClassInstance> getAllBySubjectId(String collection, String subjectId) {
-        return mongoTemplate.aggregate(Aggregation.newAggregation(Aggregation.match(Criteria.where(SUBJECT_ID).is(subjectId)),
-                Aggregation.sort(Sort.Direction.DESC, "ended_at")), collection, ClassInstance.class).getMappedResults();
+        TypedAggregation<ClassInstance> aggregation = Aggregation.newAggregation(ClassInstance.class,
+                Aggregation.match(Criteria.where(SUBJECT_ID).is(subjectId)),
+                Aggregation.sort(Sort.Direction.DESC, "ended_at"));
+        
+        AggregationResults<ClassInstance> results = mongoTemplate.aggregate(aggregation, collection, ClassInstance.class);
+        return results.getMappedResults();
     }
 
     @Override
     public int getAllAttendedBySubjectIdAndStudentIdCount(String collection, String subjectId, String studentId) {
-        return (int) mongoTemplate.count(new Query(new Criteria().andOperator(
+        Query query = Query.query(new Criteria().andOperator(
                 Criteria.where(SUBJECT_ID).is(subjectId),
                 Criteria.where("attended_students").regex(studentId, "i")
-        )), ClassInstance.class, collection);
+        ));
+        return (int) mongoTemplate.count(query, ClassInstance.class, collection);
     }
-
 
     @Override
     public int getAllBySubjectIdCount(String collection, String subjectId) {
-        return (int) mongoTemplate.count(new Query(Criteria.where(SUBJECT_ID).is(subjectId)), ClassInstance.class, collection);
+        Query query = Query.query(Criteria.where(SUBJECT_ID).is(subjectId));
+        return (int) mongoTemplate.count(query, ClassInstance.class, collection);
     }
 }

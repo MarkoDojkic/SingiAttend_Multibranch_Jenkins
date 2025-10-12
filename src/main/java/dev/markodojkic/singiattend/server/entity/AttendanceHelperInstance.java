@@ -3,7 +3,7 @@ package dev.markodojkic.singiattend.server.entity;
 import lombok.Data;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import javax.persistence.Id;
+import jakarta.persistence.Id;
 
 @Data
 public class AttendanceHelperInstance {

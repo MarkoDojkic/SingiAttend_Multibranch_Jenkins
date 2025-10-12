@@ -4,8 +4,9 @@ import lombok.Data;
 import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.Collections;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -16,11 +17,9 @@ public class ClassInstance {
     @Field("subject_id")
     private String subjectId;
     @Field("started_at")
-    @Temporal(TemporalType.TIMESTAMP)
     @DateTimeFormat(style = "yyyy-MM-dd HH:mm:ss.SSS")
     private Date startedAt;
     @Field("ended_at")
-    @Temporal(TemporalType.TIMESTAMP)
     @DateTimeFormat(style = "yyyy-MM-dd HH:mm:ss.SSS")
     private Date endedAt;
     @Field("attended_students")

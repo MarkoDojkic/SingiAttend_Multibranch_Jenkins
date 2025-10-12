@@ -24,11 +24,6 @@ public class SubjectMapperDecorator implements SubjectMapper {
         this.serverService = serverService;
     }
 
-    @Autowired
-    public void setSubjectMapper(@Qualifier("subjectMapperImpl_") SubjectMapper subjectMapper) {
-        this.subjectMapper = subjectMapper;
-    }
-
     @Override
     public Subject toEntity(SubjectDTO subjectDTO) {
         return subjectMapper.toEntity(subjectDTO);

@@ -8,14 +8,7 @@ pipeline {
     }
 
     environment {
-        // Tools (ensure these names exist in Manage Jenkins -> Global Tool Configuration)
-        JAVA_HOME = tool name: 'JDK 17', type: 'jdk'
-        MAVEN_HOME = tool name: 'Maven 3.9', type: 'maven'
-
-        // ensure typical Homebrew paths are available (gpg, mvn, docker)
-        PATH = "${JAVA_HOME}/bin:${MAVEN_HOME}/bin:/usr/local/bin:/opt/homebrew/bin:${env.PATH}"
-
-        // Nexus / Sonar credentials are injected via withCredentials in stages — keep only ids here
+        // Nexus / Sonar URLs
         NEXUS_RELEASE_URL = "http://localhost:8081/repository/maven-releases/"
         NEXUS_SNAPSHOT_URL = "http://localhost:8081/repository/maven-snapshots/"
         SONAR_URL = "http://localhost:9000"
@@ -34,7 +27,6 @@ pipeline {
         stage('Checkout & Prepare Branch') {
             steps {
                 script {
-                    // Explicit checkout of the branch (avoids detached HEAD)
                     checkout([
                         $class: 'GitSCM',
                         branches: [[name: "refs/heads/${env.BRANCH_NAME}"]],
@@ -45,10 +37,8 @@ pipeline {
                         ]]
                     ])
 
-                    // make sure local branch exists and tracks remote
                     sh "git checkout -B ${env.BRANCH_NAME} origin/${env.BRANCH_NAME} || true"
 
-                    // detect changes (safe: if repo has only one commit Git diff HEAD~1 may fail)
                     def changes = sh(script: "git rev-parse --verify HEAD~1 >/dev/null 2>&1 && git diff --name-only HEAD~1 HEAD || true", returnStdout: true).trim()
                     if (!changes) {
                         echo "No changes detected. Skipping build."
@@ -84,11 +74,13 @@ pipeline {
                         def minor = versionParts[1].toInteger() + 1
                         def nextDevVersion = "${major}.${minor}.0-SNAPSHOT"
 
-                        sh "mvn versions:set -DnewVersion=${nextDevVersion}"
-                        sh "mvn versions:commit"
+                        withMaven(maven: 'Maven 4.0', jdk: 'JDK 17') {
+                            sh "mvn versions:set -DnewVersion=${nextDevVersion}"
+                            sh "mvn versions:commit"
+                        }
+
                         echo "Next development version set to: ${nextDevVersion}"
 
-                        // Ensure we're on branch, then attempt signed commit; if gpg not available, fallback to unsigned
                         sh """
                             git checkout -B ${env.BRANCH_NAME} origin/${env.BRANCH_NAME}
                             git config user.name "Марко Дојкић"
@@ -106,8 +98,11 @@ pipeline {
 
                     if (params.VERSION_ACTION == 'release') {
                         def releaseVersion = currentVersion.replace('-SNAPSHOT','')
-                        sh "mvn versions:set -DnewVersion=${releaseVersion}"
-                        sh "mvn versions:commit"
+                        withMaven(maven: 'Maven 4.0', jdk: 'JDK 17') {
+                            sh "mvn versions:set -DnewVersion=${releaseVersion}"
+                            sh "mvn versions:commit"
+                        }
+
                         echo "Releasing version: ${releaseVersion}"
 
                         sh """
@@ -130,7 +125,9 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'mvn clean install -DskipTests -B'
+                withMaven(maven: 'Maven 4.0', jdk: 'JDK 17') {
+                    sh 'mvn clean install -DskipTests -B'
+                }
             }
         }
 
@@ -138,13 +135,14 @@ pipeline {
             when { expression { return params.RUN_SONAR == true } }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'sonar-creds', usernameVariable: 'SONAR_USER', passwordVariable: 'SONAR_PASS')]) {
-                    // SONAR_PASS is used inside the shell as an env var (no Groovy interpolation of secret)
-                    sh """
-                        mvn sonar:sonar \
-                          -Dsonar.projectKey=SingiAttend-Server-Jenkins \
-                          -Dsonar.host.url=${SONAR_URL} \
-                          -Dsonar.login=\$SONAR_PASS
-                    """
+                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 17') {
+                        sh """
+                            mvn sonar:sonar \
+                              -Dsonar.projectKey=SingiAttend-Server-Jenkins \
+                              -Dsonar.host.url=${SONAR_URL} \
+                              -Dsonar.login=\$SONAR_PASS
+                        """
+                    }
                 }
             }
         }
@@ -155,10 +153,12 @@ pipeline {
                     def pom = readMavenPom file: 'pom.xml'
                     def deployUrl = pom.version.endsWith("SNAPSHOT") ? NEXUS_SNAPSHOT_URL : NEXUS_RELEASE_URL
 
-                    sh """
-                        mvn deploy \
-                            -Dnexus.url=${deployUrl}
-                    """
+                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 17') {
+                        sh """
+                            mvn deploy \
+                                -Dnexus.url=${deployUrl}
+                        """
+                    }
                 }
             }
         }
@@ -190,7 +190,9 @@ pipeline {
         stage('Cleanup') {
             steps {
                 echo "Cleaning build files..."
-                sh 'mvn clean -B'
+                withMaven(maven: 'Maven 4.0', jdk: 'JDK 17') {
+                    sh 'mvn clean -B'
+                }
                 sh 'rm -rf target/*'
             }
         }
@@ -198,10 +200,10 @@ pipeline {
 
     post {
         success {
-            echo "Build and deployment completed successfully!"
+            echo "✅ Build and deployment completed successfully!"
         }
         failure {
-            echo "Build failed!"
+            echo "❌ Build failed!"
         }
     }
 }
