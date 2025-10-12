@@ -3,18 +3,24 @@ package dev.markodojkic.singiattend.server.controller;
 import dev.markodojkic.singiattend.server.entity.AttendanceHelperInstance;
 import dev.markodojkic.singiattend.server.model.*;
 import dev.markodojkic.singiattend.server.service.ServerService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RestController()
+@RestController
 @RequestMapping("/api")
+@CrossOrigin(
+    origins = {
+        "https://localhost:62812",
+        "https://kangaroo-discrete-viper.ngrok-free.app"
+    },
+    allowCredentials = "true",
+    allowedHeaders = {"Authorization", "Content-Type", "X-CSRF-TOKEN-SECRET"}
+)
 public class ServerController {
     private final ServerService serverService;
 
-    @Autowired
     public ServerController(ServerService serverService) {
         this.serverService = serverService;
     }

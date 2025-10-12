@@ -19,15 +19,7 @@ public class StudentMapperDecorator implements StudentMapper {
     @Autowired
     public void setStudentMapper(@Qualifier("studentMapperImpl_") StudentMapper studentMapper) {
         this.studentMapper = studentMapper;
-    }
-
-    @Autowired
-    public void setStudyRepository(IStudyRepository studyRepository) {
         this.studyRepository = studyRepository;
-    }
-
-    @Autowired
-    public void setStudyMapper(StudyMapper studyMapper) {
         this.studyMapper = studyMapper;
     }
 

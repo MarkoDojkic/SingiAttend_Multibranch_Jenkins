@@ -6,11 +6,9 @@ import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.data.mongodb.core.mapping.FieldType;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import javax.persistence.Id;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
+import jakarta.persistence.Id;
+import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 
 @Data
@@ -27,13 +25,11 @@ public class Subject {
     @Field(targetType = FieldType.OBJECT_ID, value = "assistant_id")
     private String assistantId;
     @Field("last_lecture_at")
-    @Temporal(TemporalType.TIMESTAMP)
     @DateTimeFormat(style = "yyyy-MM-dd HH:mm:ss.SSS")
-    private Date lastLectureAt;
+    private LocalDateTime lastLectureAt;
     @Field("last_exercise_at")
-    @Temporal(TemporalType.TIMESTAMP)
     @DateTimeFormat(style = "yyyy-MM-dd HH:mm:ss.SSS")
-    private Date lastExerciseAt;
+    private LocalDateTime lastExerciseAt;
     @Field("enrolled_study_ids")
     private List<String> enrolledStudyIds = Collections.emptyList(); //format studyID_takingYear
     @Field("isInactive")

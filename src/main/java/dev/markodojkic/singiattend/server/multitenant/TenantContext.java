@@ -3,6 +3,10 @@ package dev.markodojkic.singiattend.server.multitenant;
 public class TenantContext {
     private static final ThreadLocal<String> CURRENT_TENANT = new ThreadLocal<>();
 
+    // Private constructor to prevent instantiation
+    private TenantContext() {
+    }
+
     public static void setTenantId(String tenantId) {
         CURRENT_TENANT.set(tenantId);
     }
