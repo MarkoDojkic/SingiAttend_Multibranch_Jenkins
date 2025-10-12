@@ -3,23 +3,32 @@ package dev.markodojkic.singiattend.server.config;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestHandler;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
-
 @Configuration
 @EnableWebSecurity
 public class SecurityConfiguration {
@@ -45,51 +54,66 @@ public class SecurityConfiguration {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        CookieCsrfTokenRepository csrfTokenRepository = new CookieCsrfTokenRepository();
+        CsrfTokenRequestHandler tokenHandler = new XorCsrfTokenRequestAttributeHandler();
+        CookieCsrfTokenRepository csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
         csrfTokenRepository.setCookiePath("/");
         csrfTokenRepository.setHeaderName("X-CSRF-TOKEN-SECRET");
 
-        return http
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/csrfLogin").permitAll()
-                        .requestMatchers("/api/**").authenticated()  // ✅ Only allow /api/** for authenticated users
-                        .anyRequest().denyAll()                      // ⛔ Deny everything else automatically
+        http.securityMatcher("/api/**")
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers("/api/csrfLogin").permitAll()
+                .anyRequest().authenticated()
+            )
+            .httpBasic(httpBasic -> httpBasic
+                .authenticationEntryPoint(myAuthenticationEntryPoint())
+            )
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+            )
+            .csrf(csrf -> csrf
+                .csrfTokenRepository(csrfTokenRepository)
+                .csrfTokenRequestHandler(tokenHandler)
+                .ignoringRequestMatchers("/api/csrfLogin")
+            )
+            .cors(cors -> cors
+                .configurationSource(corsConfigurationSource())
+            )
+            .headers(headers -> headers
+                .contentSecurityPolicy(csp -> csp
+                    .policyDirectives("default-src 'self'; script-src 'self'; object-src 'none'; style-src 'self';")
                 )
-                .httpBasic(customizer -> customizer.authenticationEntryPoint(myAuthenticationEntryPoint()))
-                .sessionManagement(session -> session
-                        .sessionFixation().migrateSession()
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                )
-                .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository))
-                .cors(Customizer.withDefaults())
-                .requiresChannel(channel -> channel.anyRequest().requiresSecure())
-                .headers(headers -> headers
-                        .xssProtection(Customizer.withDefaults())
-                        .contentSecurityPolicy(csp -> csp.policyDirectives(
-                                "default-src 'self'; script-src 'self'; object-src 'none'; style-src 'self';"
-                        ))
-                        .frameOptions().sameOrigin()
-                ).logout(logout -> logout
-                        .logoutUrl("/api/csrfLogout")
-                        .invalidateHttpSession(true)  // 🔥 session.invalidate()
-                        .deleteCookies("JSESSIONID", "XSRF-TOKEN")  // 🔥 delete these cookies
-                        .clearAuthentication(true)
-                        .logoutSuccessHandler((request, response, authentication) -> response.setStatus(HttpServletResponse.SC_OK))
-                )
-                .build();
+                .xssProtection(xss -> xss.headerValue(XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK))
+                .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
+                .permissionsPolicyHeader(policy -> policy
+                        .policy("geolocation=(), microphone=(), camera=()"))
+            )
+            .logout(logout -> logout
+                .logoutUrl("/api/csrfLogout")
+                .invalidateHttpSession(true)
+                .deleteCookies("JSESSIONID", "XSRF-TOKEN")
+                .clearAuthentication(true)
+                .logoutSuccessHandler((request, response, authentication) -> 
+                    response.setStatus(HttpServletResponse.SC_OK))
+            );
+
+        return http.build();
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
-        AuthenticationManagerBuilder authenticationManagerBuilder =
-                http.getSharedObject(AuthenticationManagerBuilder.class);
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
+        return authConfig.getAuthenticationManager();
+    }
 
-        authenticationManagerBuilder.inMemoryAuthentication()
-                .withUser("singiattend-admin")
-                .password(passwordEncoder().encode(serverPassword))
-                .authorities("singiattend");
+    @Bean
+    public UserDetailsService userDetailsService() {
+        UserDetails user = User.builder()
+            .username("singiattend-admin")
+            .password(passwordEncoder().encode(serverPassword))
+            .roles("ADMIN")
+            .authorities("singiattend")
+            .build();
 
-        return authenticationManagerBuilder.build();  // Build the AuthenticationManager
+        return new InMemoryUserDetailsManager(user);
     }
 
     @Bean
