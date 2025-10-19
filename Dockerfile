@@ -12,6 +12,8 @@ ARG BE_JAR_VERSION
 ARG BE_JAR_SUFIX
 ARG EUREKA_JAR_VERSION
 ARG EUREKA_JAR_SUFIX
+ARG STUDENT_PROXY_JAR_VERSION
+ARG STUDENT_PROXY_JAR_SUFIX
 
 # Update repositories, install packages, Java, PHP, Nginx, Supervisor, and cleanup cache
 RUN echo "@edge http://nl.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories && \
@@ -56,8 +58,8 @@ COPY config/fpm-pool.conf /etc/php81/php-fpm.d/www.conf
 COPY config/php.ini /etc/php81/conf.d/custom.ini
 COPY config/ssl* /etc/nginx/ssl/
 COPY config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-COPY config/wait-for-eureka.sh /etc/supervisor/conf.d/wait-for-eureka.sh
-RUN chmod +x /etc/supervisor/conf.d/wait-for-eureka.sh
+COPY config/start-spring-apps.sh /etc/supervisor/conf.d/start-spring-apps.sh
+RUN chmod +x /etc/supervisor/conf.d/start-spring-apps.sh
 
 # Copy and import certificates
 COPY ssl/rootCA.pem /usr/local/share/ca-certificates/rootCA.pem
@@ -77,7 +79,10 @@ RUN set -eux; \
         -o "/var/www/SingiAttend-Server.jar"; \
     curl -fSL -u "$NEXUS_USER:$NEXUS_PASS" \
         "$NEXUS_URL/repository/maven-releases/dev/markodojkic/eurekaserver/$EUREKA_JAR_VERSION/eurekaserver-$EUREKA_JAR_SUFIX.jar" \
-        -o "/var/www/eurekaserver.jar"
+        -o "/var/www/eurekaserver.jar" \
+    curl -fSL -u "$NEXUS_USER:$NEXUS_PASS" \
+        "$NEXUS_URL/repository/maven-releases/dev/markodojkic/studentproxy/$STUDENT_PROXY_JAR_VERSION/SingiAttend-Student_Proxy-$STUDENT_PROXY_JAR_SUFIX.jar" \
+        -o "/var/www/SingiAttend-Student_Proxy.jar"
 
 # Add fullchain SSL for FE -> BE communication
 RUN cat /usr/local/share/ca-certificates/intermediateCA.pem /usr/local/share/ca-certificates/rootCA.pem \
