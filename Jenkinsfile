@@ -89,13 +89,10 @@ pipeline {
                     sh """
                         git config user.name "Марко Дојкић"
                         git config user.email "marko.dojkic@gmail.com"
+                        git config user.signingkey F7CC88ED5C36404B4BA4B1FE039F7DC7EFE5D537
                         git config commit.gpgsign true
                         git add ${VERSION_FILE}
-                        if command -v gpg >/dev/null 2>&1; then
-                            git commit -S -m 'Update FE IMAGE_TAG to ${newTag}' || echo 'no commit needed'
-                        else
-                            git -c commit.gpgsign=false commit -m 'Update FE IMAGE_TAG to ${newTag}' || echo 'no commit needed'
-                        fi
+                        git commit -S -m 'Update FE IMAGE_TAG to ${newTag}' || echo 'no commit needed'
                         git push origin HEAD:${env.BRANCH_NAME}
                     """
                 }
@@ -179,11 +176,7 @@ pipeline {
                         git config user.name "Марко Дојкић"
                         git config user.email "marko.dojkic@gmail.com"
                         git config user.signingkey F7CC88ED5C36404B4BA4B1FE039F7DC7EFE5D537
-                        if command -v gpg >/dev/null 2>&1; then
-                            git tag -s ${versionTag} -m "Tag FE build ${versionTag}"
-                        else
-                            git -c tag.gpgSign=false tag ${versionTag} -m "Tag FE build ${versionTag}"
-                        fi
+                        git tag -s ${versionTag} -m "Tag FE build ${versionTag}"
                         git push origin refs/tags/${versionTag}
                     """
                 }
