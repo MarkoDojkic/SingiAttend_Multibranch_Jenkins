@@ -71,7 +71,7 @@ pipeline {
 
                     echo "Setting version to: ${newVersion}"
 
-                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 17') {
+                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 24') {
                         sh """
                             mvn versions:set -DnewVersion=${newVersion}
                             mvn versions:commit
@@ -89,7 +89,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                withMaven(maven: 'Maven 4.0', jdk: 'JDK 17') {
+                withMaven(maven: 'Maven 4.0', jdk: 'JDK 24') {
                     sh 'mvn clean install -DskipTests -B'
                 }
             }
@@ -99,7 +99,7 @@ pipeline {
             when { expression { params.RUN_SONAR } }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'sonar-creds', usernameVariable: 'SONAR_USER', passwordVariable: 'SONAR_PASS')]) {
-                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 17') {
+                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 24') {
                         sh """
                             mvn sonar:sonar \
                               -Dsonar.projectKey=SingiAttend-Student_Proxy-Jenkins \
@@ -116,7 +116,7 @@ pipeline {
                 script {
                     def pom = readMavenPom file: 'pom.xml'
                     def deployUrl = pom.version.endsWith("SNAPSHOT") ? NEXUS_SNAPSHOT_URL : NEXUS_RELEASE_URL
-                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 17') {
+                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 24') {
                         sh "mvn deploy -Dnexus.url=${deployUrl}"
                     }
                 }
@@ -129,29 +129,48 @@ pipeline {
                 script {
                     def pom = readMavenPom file: 'pom.xml'
                     def version = pom.version.replace('-SNAPSHOT','')
+                    def tagName = "v${version}"
+                    def tagMessage = "Version ${version} (from branch: ${env.BRANCH_NAME})"
 
-                    echo "Creating Git tag: ${version}"
+                    echo "Creating Git tag: ${tagName} from branch: ${env.BRANCH_NAME}"
 
-                    sh """
-                        # Remove local tag if it exists
-                        git tag -d ${version} || true
-                        git fetch --tags
-
-                        if [ -x "$GPG_EXECUTABLE" ]; then
-                            git tag -s ${version} -m "Tag version ${version}"
-                        else
-                            git -c tag.gpgSign=false tag ${version} -m "Tag version ${version}"
-                        fi
-
-                        git push origin refs/tags/${version} -f
-                    """
+                    withCredentials([usernamePassword(credentialsId: 'github-creds', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
+                        sh """
+                            # Configure Git with credentials
+                            git config --local user.name "Jenkins"
+                            git config --local user.email "jenkins@singiattend.com"
+                            
+                            # Fetch all tags and branches
+                            git fetch --all --tags --force
+                            
+                            # Check if tag already exists
+                            if git rev-parse -q --verify "refs/tags/${tagName}" >/dev/null; then
+                                echo "Tag ${tagName} already exists. Deleting it first."
+                                git tag -d ${tagName} || true
+                                git push origin :refs/tags/${tagName} || true
+                            fi
+                            
+                            # Create new tag
+                            if [ -x "\$GPG_EXECUTABLE" ]; then
+                                git tag -s ${tagName} -m "${tagMessage}" || { echo "Failed to create signed tag"; exit 1; }
+                            else
+                                echo "c, creating unsigned tag"
+                                git -c tag.gpgSign=false tag ${tagName} -m "${tagMessage}" || { echo "Failed to create unsigned tag"; exit 1; }
+                            fi
+                            
+                            # Push the tag
+                            git push origin ${tagName} || { echo "Failed to push tag"; exit 1; }
+                            
+                            echo "Successfully created and pushed tag: ${tagName}"
+                        """
+                    }
                 }
             }
         }
 
         stage('Cleanup') {
             steps {
-                withMaven(maven: 'Maven 4.0', jdk: 'JDK 17') {
+                withMaven(maven: 'Maven 4.0', jdk: 'JDK 24') {
                     sh 'mvn clean -B'
                 }
             }
