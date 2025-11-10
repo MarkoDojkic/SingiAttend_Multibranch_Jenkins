@@ -5,7 +5,6 @@ import dev.markodojkic.singiattend.server.model.StudentDTO;
 import dev.markodojkic.singiattend.server.repository.IStudyRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -19,7 +18,15 @@ public class StudentMapperDecorator implements StudentMapper {
     @Autowired
     public void setStudentMapper(@Qualifier("studentMapperImpl_") StudentMapper studentMapper) {
         this.studentMapper = studentMapper;
+    }
+
+    @Autowired
+    public void setStudyRepository(IStudyRepository studyRepository) {
         this.studyRepository = studyRepository;
+    }
+
+    @Autowired
+    public void setStudyMapper(StudyMapper studyMapper) {
         this.studyMapper = studyMapper;
     }
 

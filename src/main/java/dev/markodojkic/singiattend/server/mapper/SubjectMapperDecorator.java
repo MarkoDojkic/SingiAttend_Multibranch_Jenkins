@@ -10,13 +10,17 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class SubjectMapperDecorator implements SubjectMapper {
 
     private SubjectMapper subjectMapper;
     private ServerService serverService;
+
+    @Autowired
+    public void setSubjectMapper(@Qualifier("subjectMapperImpl_") SubjectMapper subjectMapper) {
+        this.subjectMapper = subjectMapper;
+    }
 
     @Autowired
     @Lazy
