@@ -2,19 +2,21 @@ pipeline {
     agent any
 
     options {
+        ansiColor('xterm')
         skipDefaultCheckout(true)
         buildDiscarder(logRotator(numToKeepStr: '10'))
+        timeout(time: 30, unit: 'MINUTES')
         timestamps()
     }
 
     environment {
+        PATH = "/usr/bin:/usr/local/bin/:${env.PATH}"
         // Nexus / Sonar URLs
         NEXUS_RELEASE_URL = "http://localhost:8081/repository/maven-releases/"
         NEXUS_SNAPSHOT_URL = "http://localhost:8081/repository/maven-snapshots/"
         SONAR_URL = "http://localhost:9000"
 
-        // GPG home path for informational use (adjust if needed)
-        GPG_HOME = "/Users/markodojkic/.gnupg"
+        GPG_KEY_ID = "F7CC88ED5C36404B4BA4B1FE039F7DC7EFE5D537"
     }
 
     parameters {
@@ -24,27 +26,10 @@ pipeline {
     }
 
     stages {
-        stage('Checkout & Prepare Branch') {
+        stage('Checkout & Setup') {
             steps {
                 script {
-                    checkout([
-                        $class: 'GitSCM',
-                        branches: [[name: "refs/heads/${env.BRANCH_NAME}"]],
-                        doGenerateSubmoduleConfigurations: false,
-                        userRemoteConfigs: [[
-                            url: 'https://github.com/MarkoDojkic/SingiAttend_Multibranch_Jenkins.git',
-                            credentialsId: 'github-creds'
-                        ]]
-                    ])
-
-                    sh "git checkout -B ${env.BRANCH_NAME} origin/${env.BRANCH_NAME} || true"
-
-                    def changes = sh(script: "git rev-parse --verify HEAD~1 >/dev/null 2>&1 && git diff --name-only HEAD~1 HEAD || true", returnStdout: true).trim()
-                    if (!changes) {
-                        echo "No changes detected. Skipping build."
-                        currentBuild.result = 'NOT_BUILT'
-                        error("Stopping pipeline: no changes")
-                    }
+                    checkout scm
                 }
             }
         }
@@ -60,7 +45,7 @@ pipeline {
             }
         }
 
-        stage('Versioning') {
+        stage('Version Management') {
             when { expression { return params.VERSION_ACTION != 'none' } }
             steps {
                 script {
@@ -74,50 +59,38 @@ pipeline {
                         def minor = versionParts[1].toInteger() + 1
                         def nextDevVersion = "${major}.${minor}.0-SNAPSHOT"
 
-                        withMaven(maven: 'Maven 4.0', jdk: 'JDK 17') {
+                        withMaven(maven: 'Maven 4.0', jdk: 'JDK 25') {
                             sh "mvn versions:set -DnewVersion=${nextDevVersion}"
                             sh "mvn versions:commit"
                         }
 
                         echo "Next development version set to: ${nextDevVersion}"
 
-                        sh """
-                            git checkout -B ${env.BRANCH_NAME} origin/${env.BRANCH_NAME}
-                            git config user.name "Марко Дојкић"
-                            git config user.email "marko.dojkic@gmail.com"
-                            git config user.signingkey F7CC88ED5C36404B4BA4B1FE039F7DC7EFE5D537
-                            git add pom.xml
-                            if command -v gpg >/dev/null 2>&1; then
-                              git commit -S -m 'Bump version to ${nextDevVersion}' || echo 'no commit (no changes)'
-                            else
-                              git -c commit.gpgsign=false commit -m 'Bump version to ${nextDevVersion}' || echo 'no commit (no changes)'
-                            fi
-                            git push origin HEAD:${env.BRANCH_NAME}
-                        """
+                        withCredentials([string(credentialsId: 'gpg-passphrase', variable: 'GPG_PASS')]) {
+                            sh """
+                                git add pom.xml
+                                printf "%s" "${GPG_PASS}" | git commit -S -m "chore: bump version to ${nextDevVersion}" || echo "No changes"
+                                git push origin HEAD:${env.BRANCH_NAME} || true
+                            """
+                        }
                     }
 
                     if (params.VERSION_ACTION == 'release') {
                         def releaseVersion = currentVersion.replace('-SNAPSHOT','')
-                        withMaven(maven: 'Maven 4.0', jdk: 'JDK 17') {
+                        withMaven(maven: 'Maven 4.0', jdk: 'JDK 25') {
                             sh "mvn versions:set -DnewVersion=${releaseVersion}"
                             sh "mvn versions:commit"
                         }
 
                         echo "Releasing version: ${releaseVersion}"
 
-                        sh """
-                            git checkout -B ${env.BRANCH_NAME} origin/${env.BRANCH_NAME}
-                            git config user.name "Марко Дојкић"
-                            git config user.email "marko.dojkic@gmail.com"
-                            git config user.signingkey F7CC88ED5C36404B4BA4B1FE039F7DC7EFE5D537
-                            git add pom.xml
-                            if command -v gpg >/dev/null 2>&1; then
-                              git commit -S -m 'Release version ${releaseVersion}' || echo 'no commit (no changes)'
-                            else
-                              git -c commit.gpgsign=false commit -m 'Release version ${releaseVersion}' || echo 'no commit (no changes)'
-                            fi
-                            git push origin HEAD:${env.BRANCH_NAME}
-                        """
+                        withCredentials([string(credentialsId: 'gpg-passphrase', variable: 'GPG_PASS')]) {
+                            sh """
+                                git add pom.xml
+                                printf "%s" "${GPG_PASS}" | git commit -S -m "Release version ${releaseVersion}" || echo "No changes"
+                                git push origin HEAD:${env.BRANCH_NAME} || true
+                            """
+                        }
                     }
                 }
             }
@@ -125,7 +98,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                withMaven(maven: 'Maven 4.0', jdk: 'JDK 17') {
+                withMaven(maven: 'Maven 4.0', jdk: 'JDK 25') {
                     sh 'mvn clean install -DskipTests -B'
                 }
             }
@@ -135,7 +108,7 @@ pipeline {
             when { expression { return params.RUN_SONAR == true } }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'sonar-creds', usernameVariable: 'SONAR_USER', passwordVariable: 'SONAR_PASS')]) {
-                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 17') {
+                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 25') {
                         sh """
                             mvn sonar:sonar \
                               -Dsonar.projectKey=SingiAttend-Server-Jenkins \
@@ -153,7 +126,7 @@ pipeline {
                     def pom = readMavenPom file: 'pom.xml'
                     def deployUrl = pom.version.endsWith("SNAPSHOT") ? NEXUS_SNAPSHOT_URL : NEXUS_RELEASE_URL
 
-                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 17') {
+                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 25') {
                         sh """
                             mvn deploy \
                                 -Dnexus.url=${deployUrl}
@@ -168,21 +141,22 @@ pipeline {
             steps {
                 script {
                     def pom = readMavenPom file: 'pom.xml'
-                    def version = pom.version.replace('-SNAPSHOT','')
-                    echo "Creating Git tag: ${version}"
+                    def version = pom.version
 
-                    sh """
-                        git checkout -B ${env.BRANCH_NAME} origin/${env.BRANCH_NAME}
-                        git config user.name "Марко Дојкић"
-                        git config user.email "marko.dojkic@gmail.com"
-                        git config user.signingkey F7CC88ED5C36404B4BA4B1FE039F7DC7EFE5D537
-                        if command -v gpg >/dev/null 2>&1; then
-                          git tag -s ${version} -m "Tag version ${version}"
-                        else
-                          git -c tag.gpgSign=false tag ${version} -m "Tag version ${version}"
-                        fi
-                        git push origin refs/tags/${version}
-                    """
+                    withCredentials([string(credentialsId: 'gpg-passphrase', variable: 'GPG_PASS')]) {
+                        sh """
+                             git fetch --tags --force
+                             git tag -d singiattend-server-${versionTag} 2>/dev/null || true
+                             git push origin :refs/tags/singiattend-server-${versionTag} 2>/dev/null || true
+
+                             printf "%s" "$GPG_PASS" | git -c gpg.passphrase-fd=0 tag -s -u "$GPG_KEY_ID" \
+                                 -m "Release singiattend/server:${versionTag} (branch: ${BRANCH_NAME})" \
+                                 singiattend-server-${versionTag}
+
+                             git verify-tag -v singiattend-server-${versionTag}
+                             git push origin singiattend-server-${versionTag}
+                        """
+                    }
                 }
             }
         }
@@ -190,7 +164,7 @@ pipeline {
         stage('Cleanup') {
             steps {
                 echo "Cleaning build files..."
-                withMaven(maven: 'Maven 4.0', jdk: 'JDK 17') {
+                withMaven(maven: 'Maven 4.0', jdk: 'JDK 25') {
                     sh 'mvn clean -B'
                 }
                 sh 'rm -rf target/*'
