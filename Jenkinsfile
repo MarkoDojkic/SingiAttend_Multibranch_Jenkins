@@ -1,93 +1,160 @@
+// === Helper: Git + GPG setup (Jenkins-safe, idempotent) ===
+def setupGitConfig() {
+    sh '''
+        mkdir -p "$GPG_HOME"
+        chmod 700 "$GPG_HOME"
+
+        # Skip re-import if already configured
+        if ! git config --global user.signingkey >/dev/null 2>&1; then
+            git config --global user.name "Марко Дојкић"
+            git config --global user.email "marko.dojkic@gmail.com"
+            git config --global user.signingkey ''' + env.GPG_KEY_ID + '''
+            git config --global commit.gpgsign true
+            git config --global tag.gpgsign true
+            git config --global gpg.program "$(which gpg)"
+            git config --global gpg.format openpgp
+        fi
+
+        # GPG configs (loopback for non-interactive Jenkins)
+        echo "use-agent" > "$GPG_HOME/gpg.conf"
+        echo "pinentry-mode loopback" >> "$GPG_HOME/gpg.conf"
+        chmod 600 "$GPG_HOME/gpg.conf"
+
+        # Agent setup
+        echo 'export GPG_TTY=$(tty)' > "$GPG_HOME/gpg-agent.conf"
+        chmod 600 "$GPG_HOME/gpg-agent.conf"
+    '''
+}
+
 pipeline {
     agent any
 
     options {
+        ansiColor('xterm')
         skipDefaultCheckout(true)
         buildDiscarder(logRotator(numToKeepStr: '10'))
+        timeout(time: 30, unit: 'MINUTES')
         timestamps()
     }
 
     environment {
-        PATH = "/usr/local/bin:${env.PATH}"
+        PATH = "/usr/local/MacGPG2/bin:/usr/local/bin:/usr/bin:${env.PATH}"
         DOCKER_IMAGE_NAME = "singiattend-mongo"
-        NEXUS_DOCKER_URL = "host.lima.internal:5001"  // Nexus Docker repo
-        VERSION_FILE = "VERSION" // file storing Docker image version
+        NEXUS_DOCKER_URL = "host.lima.internal:5001"
+        VERSION_FILE = "VERSION"
+        DOCKER_BUILDKIT = '1'
+        GPG_KEY_ID = "F7CC88ED5C36404B4BA4B1FE039F7DC7EFE5D537"
+        GPG_HOME = "${WORKSPACE}/.gnupg"
     }
 
     parameters {
-        booleanParam(name: 'PUSH_TO_NEXUS', defaultValue: false, description: 'Push Docker image to Nexus repository')
-        choice(name: 'VERSION_ACTION', choices: ['none', 'bump-development', 'release'], description: 'Version action for Docker image')
-        booleanParam(name: 'TAG_THIS_BUILD', defaultValue: false, description: 'Tag Docker image for this build')
+        booleanParam(name: 'SKIP_BUILD', defaultValue: false, description: 'Skip Docker build')
+        booleanParam(name: 'SKIP_DEPLOY', defaultValue: false, description: 'Skip push to Nexus')
+        choice(name: 'VERSION_ACTION', choices: ['none', 'bump-development', 'release'], description: 'Version bump or release')
+        booleanParam(name: 'TAG_THIS_BUILD', defaultValue: false, description: 'Create signed Git tag')
     }
 
     stages {
-        stage('Checkout') {
+
+        stage('Checkout and Setup') {
             steps {
                 checkout scm
+                script {
+                    setupGitConfig()
+
+                    // Ensure VERSION file exists
+                    if (!fileExists(env.VERSION_FILE)) {
+                        writeFile file: env.VERSION_FILE, text: '1.0.0-SNAPSHOT'
+                        sh '''
+                            git add VERSION
+                            git commit -S -m "chore: initialize version file with 1.0.0-SNAPSHOT" || echo "No changes"
+                            git push origin HEAD:${BRANCH_NAME} || true
+                        '''
+                    }
+                }
             }
         }
 
-        stage('Versioning') {
-            when {
-                expression { return params.VERSION_ACTION != 'none' }
-            }
+        stage('Version Management') {
+            when { expression { params.VERSION_ACTION != 'none' } }
             steps {
                 script {
-                    // Read current version or default to 1.0.0-SNAPSHOT
-                    def currentVersion = fileExists(VERSION_FILE) ? readFile(VERSION_FILE).trim() : "1.0.0-SNAPSHOT"
-                    echo "Current Docker image version: ${currentVersion}"
+                    def currentVersion = readFile(env.VERSION_FILE).trim()
+                    def newVersion = ''
 
                     if (params.VERSION_ACTION == 'bump-development') {
                         def parts = currentVersion.replace('-SNAPSHOT','').tokenize('.')
-                        def major = parts[0].toInteger()
-                        def minor = parts[1].toInteger() + 1
-                        def nextDevVersion = "${major}.${minor}.0-SNAPSHOT"
-                        writeFile file: VERSION_FILE, text: nextDevVersion
-                        echo "Bumped Docker image to next development version: ${nextDevVersion}"
+                        if (parts.size() < 3) parts = [1,0,0]
+                        def patch = parts[2].toInteger() + 1
+                        newVersion = "${parts[0]}.${parts[1]}.${patch}-SNAPSHOT"
+                    } else if (params.VERSION_ACTION == 'release') {
+                        newVersion = currentVersion.replace('-SNAPSHOT','')
                     }
 
-                    if (params.VERSION_ACTION == 'release') {
-                        def releaseVersion = currentVersion.replace('-SNAPSHOT','-RC')
-                        writeFile file: VERSION_FILE, text: releaseVersion
-                        echo "Releasing Docker image version: ${releaseVersion}"
+                    if (newVersion && newVersion != currentVersion) {
+                        echo "Updating version from ${currentVersion} → ${newVersion}"
+                        writeFile file: env.VERSION_FILE, text: newVersion
+                        sh """
+                            git add ${env.VERSION_FILE}
+                            git commit -S -m "chore: bump version to ${newVersion}" || echo "No changes"
+                            git push origin HEAD:${env.BRANCH_NAME} || true
+                        """
+                        env.VERSION = newVersion
+                    } else {
+                        echo "No version change needed (current: ${currentVersion})"
+                        env.VERSION = currentVersion
+                    }
+                }
+            }
+        }
+
+        stage('Setup GPG') {
+            steps {
+                script {
+                    withCredentials([file(credentialsId: 'gpg-secret-key', variable: 'GPG_KEY_FILE')]) {
+                        sh '''
+                            mkdir -p "$GPG_HOME"
+                            chmod 700 "$GPG_HOME"
+
+                            if [ ! -f "$GPG_HOME/pubring.kbx" ]; then
+                                echo "Importing GPG key..."
+                                gpg --batch --homedir "$GPG_HOME" --import "$GPG_KEY_FILE"
+                                echo "''' + env.GPG_KEY_ID + ''':6:" | gpg --homedir "$GPG_HOME" --import-ownertrust
+                            fi
+
+                            echo "=== GPG Keys ==="
+                            gpg --homedir "$GPG_HOME" --list-secret-keys --keyid-format LONG
+                        '''
                     }
 
-                    // Commit version file back to Git
-                    def versionToCommit = readFile(VERSION_FILE).trim()
-                    sh """
-                        git config user.name "Марко Дојкић"
-                        git config user.email "marko.dojkic@gmail.com"
-                        git config user.signingkey F7CC88ED5C36404B4BA4B1FE039F7DC7EFE5D537
-                        git config commit.gpgsign true
-                        git add ${VERSION_FILE}
-                        if command -v gpg >/dev/null 2>&1; then
-                          git commit -S -m 'Update Docker image version to ${versionToCommit}' || echo 'no commit needed'
-                        else
-                          git -c commit.gpgsign=false commit -m 'Update Docker image version to ${versionToCommit}' || echo 'no commit needed'
-                        fi
-                        git push origin HEAD:${env.BRANCH_NAME}
-                    """
+                    sh '''
+                        echo "=== Git GPG Config ==="
+                        git config --global --list | grep -E "user|gpg|sign" || true
+                    '''
                 }
             }
         }
 
         stage('Build Docker Image') {
+            when { expression { !params.SKIP_BUILD } }
             steps {
                 script {
-                    def versionTag = readFile(VERSION_FILE).trim()
-                    echo "Building Docker image: ${DOCKER_IMAGE_NAME}:${versionTag}"
-                    sh "docker build -t ${DOCKER_IMAGE_NAME}:${versionTag} -t ${DOCKER_IMAGE_NAME}:latest ."
+                    def versionTag = env.VERSION ?: readFile(env.VERSION_FILE).trim()
+                    echo "Building Docker image ${env.DOCKER_IMAGE_NAME}:${versionTag}"
+                    sh """
+                        DOCKER_BUILDKIT=1 docker build \
+                            -t ${env.DOCKER_IMAGE_NAME}:${versionTag} \
+                            -t ${env.DOCKER_IMAGE_NAME}:latest .
+                    """
                 }
             }
         }
 
         stage('Push to Nexus') {
-            when {
-                expression { return params.PUSH_TO_NEXUS == true }
-            }
+            when { expression { !params.SKIP_DEPLOY } }
             steps {
                 script {
-                    def versionTag = readFile(VERSION_FILE).trim()
+                    def versionTag = env.VERSION ?: readFile(env.VERSION_FILE).trim()
                     withCredentials([usernamePassword(credentialsId: 'nexus-creds', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
                         sh """
                             echo \$NEXUS_PASS | docker login ${NEXUS_DOCKER_URL} -u \$NEXUS_USER --password-stdin
@@ -103,23 +170,28 @@ pipeline {
         }
 
         stage('Tag Build') {
-            when {
-                expression { return params.TAG_THIS_BUILD == true }
-            }
+            when { expression { params.TAG_THIS_BUILD } }
             steps {
                 script {
-                    def versionTag = readFile(VERSION_FILE).trim()
-                    echo "Creating Git tag: ${versionTag}"
+                    def versionTag = env.VERSION ?: readFile(env.VERSION_FILE).trim()
+                    setupGitConfig()
+
+                    echo "Creating signed tag singiattend-mongo-${versionTag}"
                     sh """
-                        git config user.name "Марко Дојкић"
-                        git config user.email "marko.dojkic@gmail.com"
-                        git config user.signingkey F7CC88ED5C36404B4BA4B1FE039F7DC7EFE5D537
-                        if command -v gpg >/dev/null 2>&1; then
-                          git tag -s ${versionTag} -m "Tag version ${versionTag}"
-                        else
-                          git -c tag.gpgSign=false tag ${versionTag} -m "Tag version ${versionTag}"
-                        fi
-                        git push origin refs/tags/${versionTag}
+                        git fetch --tags --force
+                        git tag -d singiattend-mongo-${versionTag} 2>/dev/null || true
+                        git push origin :refs/tags/singiattend-mongo-${versionTag} 2>/dev/null || true
+
+                        unset GIT_CONFIG_PARAMETERS
+                        git config --local user.signingkey ${GPG_KEY_ID}
+
+                        /usr/bin/git -c user.signingkey=${GPG_KEY_ID} tag \
+                            -s -u ${GPG_KEY_ID} \
+                            -m "Release singiattend/mongo:${versionTag} (branch: ${env.BRANCH_NAME})" \
+                            singiattend-mongo-${versionTag}
+
+                        git verify-tag -v singiattend-mongo-${versionTag}
+                        git push origin singiattend-mongo-${versionTag}
                     """
                 }
             }
@@ -128,10 +200,12 @@ pipeline {
         stage('Cleanup') {
             steps {
                 script {
-                    def versionTag = readFile(VERSION_FILE).trim()
-                    echo "Cleaning up local Docker images: ${DOCKER_IMAGE_NAME}:${versionTag}"
-                    sh "docker rmi ${DOCKER_IMAGE_NAME}:${versionTag} || true"
-                    sh "docker rmi ${DOCKER_IMAGE_NAME}:latest || true"
+                    def versionTag = env.VERSION ?: readFile(env.VERSION_FILE).trim()
+                    echo "Cleaning up Docker artifacts..."
+                    sh """
+                        docker rmi ${env.DOCKER_IMAGE_NAME}:${versionTag} || true
+                        docker rmi ${env.DOCKER_IMAGE_NAME}:latest || true
+                    """
                 }
             }
         }
@@ -139,10 +213,13 @@ pipeline {
 
     post {
         success {
-            echo "Docker build (and optional push) completed successfully!"
+            echo "✅ Build and deployment succeeded."
         }
         failure {
-            echo "Docker build/push failed!"
+            echo "❌ Build or deployment failed!"
+        }
+        cleanup {
+            cleanWs(deleteDirs: true, notFailBuild: true)
         }
     }
 }
