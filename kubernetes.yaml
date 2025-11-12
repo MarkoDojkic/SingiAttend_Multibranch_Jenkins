@@ -1,0 +1,1178 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2025-11-12T18:25:20Z"
+    generateName: singiattend-76c9fd4c96-
+    generation: 1
+    labels:
+      app: singiattend
+      pod-template-hash: 76c9fd4c96
+    name: singiattend-76c9fd4c96-8lm6b
+    namespace: nexus
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: singiattend-76c9fd4c96
+      uid: 0a64df75-f65b-43e6-a81d-f611eebcbfe9
+    resourceVersion: "5426"
+    uid: a36d32b0-0b5c-4c3b-89bc-16c9191cf200
+  spec:
+    containers:
+    - envFrom:
+      - configMapRef:
+          name: singiattend-cm
+      image: host.lima.internal:5001/singiattend-appstack:latest
+      imagePullPolicy: IfNotPresent
+      name: singiattend
+      ports:
+      - containerPort: 443
+        name: singiattend-fe
+        protocol: TCP
+      - containerPort: 62811
+        name: singiattend-be
+        protocol: TCP
+      - containerPort: 62814
+        name: singiattend-sp
+        protocol: TCP
+      - containerPort: 8761
+        name: eureka-server
+        protocol: TCP
+      resources:
+        limits:
+          cpu: "2"
+          memory: 2Gi
+        requests:
+          cpu: "2"
+          memory: 2Gi
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-84gjl
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    imagePullSecrets:
+    - name: madojkic-nexus
+    initContainers:
+    - command:
+      - sh
+      - -c
+      - |
+        echo "Waiting for MongoDB..."
+        until mongosh --host singiattend-mongo-service --port 62810 --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
+          echo "MongoDB not ready yet, retrying..."
+          sleep 3
+        done
+        echo "MongoDB is ready!"
+      image: mongo:6.0
+      imagePullPolicy: IfNotPresent
+      name: wait-for-mongo
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-84gjl
+        readOnly: true
+    nodeName: colima
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-84gjl
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2025-11-12T18:25:22Z"
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2025-11-12T18:25:22Z"
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2025-11-12T18:25:23Z"
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2025-11-12T18:25:23Z"
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2025-11-12T18:25:20Z"
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - allocatedResources:
+        cpu: "2"
+        memory: 2Gi
+      containerID: docker://e4a9c1597e672ed62e2e07e339b744db656fc2487f17a2b0115d37d248f76d93
+      image: host.lima.internal:5001/singiattend-appstack:2.7.0
+      imageID: docker-pullable://host.lima.internal:5001/singiattend-appstack@sha256:6209ed211cc3cc2d61d6ce1ba4c29ed42366754b2534273d9d1da7e959725e42
+      lastState: {}
+      name: singiattend
+      ready: true
+      resources:
+        limits:
+          cpu: "2"
+          memory: 2Gi
+        requests:
+          cpu: "2"
+          memory: 2Gi
+      restartCount: 0
+      started: true
+      state:
+        running:
+          startedAt: "2025-11-12T18:25:23Z"
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-84gjl
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 192.168.5.1
+    hostIPs:
+    - ip: 192.168.5.1
+    initContainerStatuses:
+    - containerID: docker://a330a062c6c80a49041c5e3f94b2bf69f4261d44ac6b2d747aaee34848b262f0
+      image: mongo:6.0
+      imageID: docker-pullable://mongo@sha256:0a83b2f824b29c94c5284a49b018db2e3166d9879d1edda5cce545d899ef2bbb
+      lastState: {}
+      name: wait-for-mongo
+      ready: true
+      resources: {}
+      restartCount: 0
+      started: false
+      state:
+        terminated:
+          containerID: docker://a330a062c6c80a49041c5e3f94b2bf69f4261d44ac6b2d747aaee34848b262f0
+          exitCode: 0
+          finishedAt: "2025-11-12T18:25:22Z"
+          reason: Completed
+          startedAt: "2025-11-12T18:25:21Z"
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-84gjl
+        readOnly: true
+        recursiveReadOnly: Disabled
+    phase: Running
+    podIP: 10.42.0.11
+    podIPs:
+    - ip: 10.42.0.11
+    qosClass: Burstable
+    startTime: "2025-11-12T18:25:20Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2025-11-12T18:11:35Z"
+    generateName: singiattend-mongo-74f666d788-
+    generation: 1
+    labels:
+      app: singiattend-mongo
+      pod-template-hash: 74f666d788
+    name: singiattend-mongo-74f666d788-pznxn
+    namespace: nexus
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: singiattend-mongo-74f666d788
+      uid: 07d359be-a3d9-40be-be4b-fc5ec8d98dc8
+    resourceVersion: "5043"
+    uid: 52a3b4ba-3d77-47dc-84b8-6d33ed0c4d22
+  spec:
+    containers:
+    - image: host.lima.internal:5001/singiattend-mongo:latest
+      imagePullPolicy: IfNotPresent
+      name: singiattend-mongo
+      ports:
+      - containerPort: 27017
+        name: singiattend-db
+        protocol: TCP
+      resources:
+        limits:
+          cpu: "1"
+          memory: 1Gi
+        requests:
+          cpu: "1"
+          memory: 1Gi
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /data/db
+        name: mongodb-storage
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-fdpjd
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    imagePullSecrets:
+    - name: madojkic-nexus
+    nodeName: colima
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: mongodb-storage
+      persistentVolumeClaim:
+        claimName: mongodb-pvc
+    - name: kube-api-access-fdpjd
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2025-11-12T18:11:39Z"
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2025-11-12T18:11:35Z"
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2025-11-12T18:11:39Z"
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2025-11-12T18:11:39Z"
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2025-11-12T18:11:35Z"
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - allocatedResources:
+        cpu: "1"
+        memory: 1Gi
+      containerID: docker://31a168bf052d01a9e137f9fae3cd0ba0f092c0b364112b1344cf05d95f9f5d54
+      image: host.lima.internal:5001/singiattend-mongo:latest
+      imageID: docker-pullable://host.lima.internal:5001/singiattend-mongo@sha256:ab8abf0c879d28475e20acfb650ae185d96517d024d9012824505ef9151764ee
+      lastState: {}
+      name: singiattend-mongo
+      ready: true
+      resources:
+        limits:
+          cpu: "1"
+          memory: 1Gi
+        requests:
+          cpu: "1"
+          memory: 1Gi
+      restartCount: 0
+      started: true
+      state:
+        running:
+          startedAt: "2025-11-12T18:11:38Z"
+      volumeMounts:
+      - mountPath: /data/db
+        name: mongodb-storage
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-fdpjd
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 192.168.5.1
+    hostIPs:
+    - ip: 192.168.5.1
+    phase: Running
+    podIP: 10.42.0.8
+    podIPs:
+    - ip: 10.42.0.8
+    qosClass: Guaranteed
+    startTime: "2025-11-12T18:11:35Z"
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"singiattend-mongo-service","namespace":"nexus"},"spec":{"ports":[{"name":"singiattend-db","port":62810,"protocol":"TCP","targetPort":27017}],"selector":{"app":"singiattend-mongo"}}}
+    creationTimestamp: "2025-11-12T14:36:13Z"
+    name: singiattend-mongo-service
+    namespace: nexus
+    resourceVersion: "631"
+    uid: d681ad89-d27c-482f-a3f9-3e7890095486
+  spec:
+    clusterIP: 10.43.28.225
+    clusterIPs:
+    - 10.43.28.225
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: singiattend-db
+      port: 62810
+      protocol: TCP
+      targetPort: 27017
+    selector:
+      app: singiattend-mongo
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"singiattend-service","namespace":"nexus"},"spec":{"ports":[{"name":"singiattend-fe","port":62812,"protocol":"TCP","targetPort":443},{"name":"singiattend-be","port":62811,"protocol":"TCP","targetPort":62811},{"name":"singiattend-sp","port":62814,"protocol":"TCP","targetPort":62814},{"name":"eureka-server","port":8761,"protocol":"TCP","targetPort":8761}],"selector":{"app":"singiattend"}}}
+    creationTimestamp: "2025-11-12T18:25:09Z"
+    name: singiattend-service
+    namespace: nexus
+    resourceVersion: "5379"
+    uid: e1943f26-b2c2-4c31-847c-62729521b333
+  spec:
+    clusterIP: 10.43.193.231
+    clusterIPs:
+    - 10.43.193.231
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: singiattend-fe
+      port: 62812
+      protocol: TCP
+      targetPort: 443
+    - name: singiattend-be
+      port: 62811
+      protocol: TCP
+      targetPort: 62811
+    - name: singiattend-sp
+      port: 62814
+      protocol: TCP
+      targetPort: 62814
+    - name: eureka-server
+      port: 8761
+      protocol: TCP
+      targetPort: 8761
+    selector:
+      app: singiattend
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "3"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"labels":{"app":"singiattend"},"name":"singiattend","namespace":"nexus"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"singiattend"}},"template":{"metadata":{"labels":{"app":"singiattend"}},"spec":{"containers":[{"envFrom":[{"configMapRef":{"name":"singiattend-cm"}}],"image":"host.lima.internal:8081/singiattend-appstack:latest","imagePullPolicy":"IfNotPresent","name":"singiattend","ports":[{"containerPort":443,"name":"singiattend-fe","protocol":"TCP"},{"containerPort":62811,"name":"singiattend-be","protocol":"TCP"},{"containerPort":62814,"name":"singiattend-sp","protocol":"TCP"},{"containerPort":8761,"name":"eureka-server","protocol":"TCP"}],"resources":{"limits":{"cpu":"1","memory":"2Gi"},"requests":{"cpu":"1","memory":"2Gi"}},"terminationMessagePath":"/dev/termination-log","terminationMessagePolicy":"File"}],"imagePullSecrets":[{"name":"madojkic-nexus"}],"initContainers":[{"command":["sh","-c","echo \"Waiting for MongoDB...\"\nuntil mongosh --host singiattend-mongo-service --port 62810 --eval \"db.adminCommand('ping')\" \u003e /dev/null 2\u003e\u00261; do\n  echo \"MongoDB not ready yet, retrying...\"\n  sleep 3\ndone\necho \"MongoDB is ready!\"\n"],"image":"mongo:6.0","name":"wait-for-mongo"}],"restartPolicy":"Always"}}}}
+    creationTimestamp: "2025-11-12T14:40:53Z"
+    generation: 15
+    labels:
+      app: singiattend
+      k8slens-edit-resource-version: v1
+    name: singiattend
+    namespace: nexus
+    resourceVersion: "5430"
+    uid: d25f4b46-befd-42fd-bd3c-7e53144ab264
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: singiattend
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: singiattend
+      spec:
+        containers:
+        - envFrom:
+          - configMapRef:
+              name: singiattend-cm
+          image: host.lima.internal:5001/singiattend-appstack:latest
+          imagePullPolicy: IfNotPresent
+          name: singiattend
+          ports:
+          - containerPort: 443
+            name: singiattend-fe
+            protocol: TCP
+          - containerPort: 62811
+            name: singiattend-be
+            protocol: TCP
+          - containerPort: 62814
+            name: singiattend-sp
+            protocol: TCP
+          - containerPort: 8761
+            name: eureka-server
+            protocol: TCP
+          resources:
+            limits:
+              cpu: "2"
+              memory: 2Gi
+            requests:
+              cpu: "2"
+              memory: 2Gi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        imagePullSecrets:
+        - name: madojkic-nexus
+        initContainers:
+        - command:
+          - sh
+          - -c
+          - |
+            echo "Waiting for MongoDB..."
+            until mongosh --host singiattend-mongo-service --port 62810 --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
+              echo "MongoDB not ready yet, retrying..."
+              sleep 3
+            done
+            echo "MongoDB is ready!"
+          image: mongo:6.0
+          imagePullPolicy: IfNotPresent
+          name: wait-for-mongo
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2025-11-12T14:40:53Z"
+      lastUpdateTime: "2025-11-12T18:09:35Z"
+      message: ReplicaSet "singiattend-76c9fd4c96" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2025-11-12T18:25:23Z"
+      lastUpdateTime: "2025-11-12T18:25:23Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 15
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "3"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"labels":{"app":"singiattend-mongo"},"name":"singiattend-mongo","namespace":"nexus"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"singiattend-mongo"}},"template":{"metadata":{"labels":{"app":"singiattend-mongo"}},"spec":{"containers":[{"image":"host.lima.internal:8081/singiattend-mongo:latest","imagePullPolicy":"IfNotPresent","name":"singiattend-mongo","ports":[{"containerPort":27017,"name":"singiattend-db","protocol":"TCP"}],"resources":{"limits":{"cpu":"2","memory":"1Gi"},"requests":{"cpu":"2","memory":"1Gi"}},"terminationMessagePath":"/dev/termination-log","terminationMessagePolicy":"File","volumeMounts":[{"mountPath":"/data/db","name":"mongodb-storage"}]}],"imagePullSecrets":[{"name":"madojkic-nexus"}],"restartPolicy":"Always","volumes":[{"name":"mongodb-storage","persistentVolumeClaim":{"claimName":"mongodb-pvc"}}]}}}}
+    creationTimestamp: "2025-11-12T14:35:31Z"
+    generation: 7
+    labels:
+      app: singiattend-mongo
+      k8slens-edit-resource-version: v1
+    name: singiattend-mongo
+    namespace: nexus
+    resourceVersion: "5047"
+    uid: e7ec4e63-e60e-42f3-a10a-443b05e44b5a
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: singiattend-mongo
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: singiattend-mongo
+      spec:
+        containers:
+        - image: host.lima.internal:5001/singiattend-mongo:latest
+          imagePullPolicy: IfNotPresent
+          name: singiattend-mongo
+          ports:
+          - containerPort: 27017
+            name: singiattend-db
+            protocol: TCP
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+            requests:
+              cpu: "1"
+              memory: 1Gi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /data/db
+            name: mongodb-storage
+        dnsPolicy: ClusterFirst
+        imagePullSecrets:
+        - name: madojkic-nexus
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - name: mongodb-storage
+          persistentVolumeClaim:
+            claimName: mongodb-pvc
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2025-11-12T14:35:31Z"
+      lastUpdateTime: "2025-11-12T18:02:26Z"
+      message: ReplicaSet "singiattend-mongo-74f666d788" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2025-11-12T18:11:39Z"
+      lastUpdateTime: "2025-11-12T18:11:39Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 7
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "0"
+      deployment.kubernetes.io/max-replicas: "0"
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2025-11-12T14:40:53Z"
+    generation: 2
+    labels:
+      app: singiattend
+      pod-template-hash: 755fd49d7f
+    name: singiattend-755fd49d7f
+    namespace: nexus
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: singiattend
+      uid: d25f4b46-befd-42fd-bd3c-7e53144ab264
+    resourceVersion: "770"
+    uid: 8ccd924a-230e-4525-8b5c-89a06ecab0a3
+  spec:
+    replicas: 0
+    selector:
+      matchLabels:
+        app: singiattend
+        pod-template-hash: 755fd49d7f
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: singiattend
+          pod-template-hash: 755fd49d7f
+      spec:
+        containers:
+        - envFrom:
+          - configMapRef:
+              name: singiattend-cm
+          image: host.lima.internal:8081/singiattend-appstack:latest
+          imagePullPolicy: IfNotPresent
+          name: singiattend
+          ports:
+          - containerPort: 443
+            name: singiattend-fe
+            protocol: TCP
+          - containerPort: 62811
+            name: singiattend-be
+            protocol: TCP
+          - containerPort: 62814
+            name: singiattend-sp
+            protocol: TCP
+          - containerPort: 8761
+            name: eureka-server
+            protocol: TCP
+          resources:
+            limits:
+              cpu: "1"
+              memory: 2Gi
+            requests:
+              cpu: "1"
+              memory: 2Gi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        imagePullSecrets:
+        - name: madojkic-nexus
+        initContainers:
+        - command:
+          - sh
+          - -c
+          - |
+            echo "Waiting for MongoDB..."
+            until mongosh --host singiattend-mongo-service --port 62810 --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
+              echo "MongoDB not ready yet, retrying..."
+              sleep 3
+            done
+            echo "MongoDB is ready!"
+          image: mongo:6.0
+          imagePullPolicy: IfNotPresent
+          name: wait-for-mongo
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    observedGeneration: 2
+    replicas: 0
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "3"
+    creationTimestamp: "2025-11-12T18:09:35Z"
+    generation: 8
+    labels:
+      app: singiattend
+      pod-template-hash: 76c9fd4c96
+    name: singiattend-76c9fd4c96
+    namespace: nexus
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: singiattend
+      uid: d25f4b46-befd-42fd-bd3c-7e53144ab264
+    resourceVersion: "5429"
+    uid: 0a64df75-f65b-43e6-a81d-f611eebcbfe9
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: singiattend
+        pod-template-hash: 76c9fd4c96
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: singiattend
+          pod-template-hash: 76c9fd4c96
+      spec:
+        containers:
+        - envFrom:
+          - configMapRef:
+              name: singiattend-cm
+          image: host.lima.internal:5001/singiattend-appstack:latest
+          imagePullPolicy: IfNotPresent
+          name: singiattend
+          ports:
+          - containerPort: 443
+            name: singiattend-fe
+            protocol: TCP
+          - containerPort: 62811
+            name: singiattend-be
+            protocol: TCP
+          - containerPort: 62814
+            name: singiattend-sp
+            protocol: TCP
+          - containerPort: 8761
+            name: eureka-server
+            protocol: TCP
+          resources:
+            limits:
+              cpu: "2"
+              memory: 2Gi
+            requests:
+              cpu: "2"
+              memory: 2Gi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        imagePullSecrets:
+        - name: madojkic-nexus
+        initContainers:
+        - command:
+          - sh
+          - -c
+          - |
+            echo "Waiting for MongoDB..."
+            until mongosh --host singiattend-mongo-service --port 62810 --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
+              echo "MongoDB not ready yet, retrying..."
+              sleep 3
+            done
+            echo "MongoDB is ready!"
+          image: mongo:6.0
+          imagePullPolicy: IfNotPresent
+          name: wait-for-mongo
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    fullyLabeledReplicas: 1
+    observedGeneration: 8
+    readyReplicas: 1
+    replicas: 1
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "0"
+      deployment.kubernetes.io/max-replicas: "0"
+      deployment.kubernetes.io/revision: "2"
+    creationTimestamp: "2025-11-12T18:02:37Z"
+    generation: 5
+    labels:
+      app: singiattend
+      pod-template-hash: 85d77d9996
+    name: singiattend-85d77d9996
+    namespace: nexus
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: singiattend
+      uid: d25f4b46-befd-42fd-bd3c-7e53144ab264
+    resourceVersion: "4907"
+    uid: 1b722018-9191-4b53-b846-5d6dffe7c1e9
+  spec:
+    replicas: 0
+    selector:
+      matchLabels:
+        app: singiattend
+        pod-template-hash: 85d77d9996
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: singiattend
+          pod-template-hash: 85d77d9996
+      spec:
+        containers:
+        - envFrom:
+          - configMapRef:
+              name: singiattend-cm
+          image: host.lima.internal:5001/singiattend-appstack:latest
+          imagePullPolicy: IfNotPresent
+          name: singiattend
+          ports:
+          - containerPort: 443
+            name: singiattend-fe
+            protocol: TCP
+          - containerPort: 62811
+            name: singiattend-be
+            protocol: TCP
+          - containerPort: 62814
+            name: singiattend-sp
+            protocol: TCP
+          - containerPort: 8761
+            name: eureka-server
+            protocol: TCP
+          resources:
+            limits:
+              cpu: "1"
+              memory: 2Gi
+            requests:
+              cpu: "1"
+              memory: 2Gi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        imagePullSecrets:
+        - name: madojkic-nexus
+        initContainers:
+        - command:
+          - sh
+          - -c
+          - |
+            echo "Waiting for MongoDB..."
+            until mongosh --host singiattend-mongo-service --port 62810 --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
+              echo "MongoDB not ready yet, retrying..."
+              sleep 3
+            done
+            echo "MongoDB is ready!"
+          image: mongo:6.0
+          imagePullPolicy: IfNotPresent
+          name: wait-for-mongo
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    observedGeneration: 5
+    replicas: 0
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "0"
+      deployment.kubernetes.io/max-replicas: "0"
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2025-11-12T14:35:31Z"
+    generation: 2
+    labels:
+      app: singiattend-mongo
+      pod-template-hash: 54f7c88c9c
+    name: singiattend-mongo-54f7c88c9c
+    namespace: nexus
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: singiattend-mongo
+      uid: e7ec4e63-e60e-42f3-a10a-443b05e44b5a
+    resourceVersion: "717"
+    uid: bc303c16-04e0-410d-ad7f-e670cc365e6a
+  spec:
+    replicas: 0
+    selector:
+      matchLabels:
+        app: singiattend-mongo
+        pod-template-hash: 54f7c88c9c
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: singiattend-mongo
+          pod-template-hash: 54f7c88c9c
+      spec:
+        containers:
+        - image: host.lima.internal:8081/singiattend-mongo:latest
+          imagePullPolicy: IfNotPresent
+          name: singiattend-mongo
+          ports:
+          - containerPort: 27017
+            name: singiattend-db
+            protocol: TCP
+          resources:
+            limits:
+              cpu: "2"
+              memory: 1Gi
+            requests:
+              cpu: "2"
+              memory: 1Gi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /data/db
+            name: mongodb-storage
+        dnsPolicy: ClusterFirst
+        imagePullSecrets:
+        - name: madojkic-nexus
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - name: mongodb-storage
+          persistentVolumeClaim:
+            claimName: mongodb-pvc
+  status:
+    observedGeneration: 2
+    replicas: 0
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "3"
+    creationTimestamp: "2025-11-12T18:02:26Z"
+    generation: 4
+    labels:
+      app: singiattend-mongo
+      pod-template-hash: 74f666d788
+    name: singiattend-mongo-74f666d788
+    namespace: nexus
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: singiattend-mongo
+      uid: e7ec4e63-e60e-42f3-a10a-443b05e44b5a
+    resourceVersion: "5046"
+    uid: 07d359be-a3d9-40be-be4b-fc5ec8d98dc8
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: singiattend-mongo
+        pod-template-hash: 74f666d788
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: singiattend-mongo
+          pod-template-hash: 74f666d788
+      spec:
+        containers:
+        - image: host.lima.internal:5001/singiattend-mongo:latest
+          imagePullPolicy: IfNotPresent
+          name: singiattend-mongo
+          ports:
+          - containerPort: 27017
+            name: singiattend-db
+            protocol: TCP
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+            requests:
+              cpu: "1"
+              memory: 1Gi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /data/db
+            name: mongodb-storage
+        dnsPolicy: ClusterFirst
+        imagePullSecrets:
+        - name: madojkic-nexus
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - name: mongodb-storage
+          persistentVolumeClaim:
+            claimName: mongodb-pvc
+  status:
+    availableReplicas: 1
+    fullyLabeledReplicas: 1
+    observedGeneration: 4
+    readyReplicas: 1
+    replicas: 1
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "0"
+      deployment.kubernetes.io/max-replicas: "0"
+      deployment.kubernetes.io/revision: "2"
+    creationTimestamp: "2025-11-12T14:41:11Z"
+    generation: 1
+    labels:
+      app: singiattend-mongo
+      pod-template-hash: 775575674f
+    name: singiattend-mongo-775575674f
+    namespace: nexus
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: singiattend-mongo
+      uid: e7ec4e63-e60e-42f3-a10a-443b05e44b5a
+    resourceVersion: "777"
+    uid: 04110cff-026d-4d21-bec6-4e5958ae0072
+  spec:
+    replicas: 0
+    selector:
+      matchLabels:
+        app: singiattend-mongo
+        pod-template-hash: 775575674f
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: singiattend-mongo
+          pod-template-hash: 775575674f
+      spec:
+        containers:
+        - image: host.lima.internal:8081/singiattend-mongo:latest
+          imagePullPolicy: IfNotPresent
+          name: singiattend-mongo
+          ports:
+          - containerPort: 27017
+            name: singiattend-db
+            protocol: TCP
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+            requests:
+              cpu: "1"
+              memory: 1Gi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /data/db
+            name: mongodb-storage
+        dnsPolicy: ClusterFirst
+        imagePullSecrets:
+        - name: madojkic-nexus
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - name: mongodb-storage
+          persistentVolumeClaim:
+            claimName: mongodb-pvc
+  status:
+    observedGeneration: 1
+    replicas: 0
+- apiVersion: v1
+  data:
+    ca.crt: |
+      -----BEGIN CERTIFICATE-----
+      MIIBdzCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy
+      dmVyLWNhQDE3NjI5NTc3NTAwHhcNMjUxMTEyMTQyOTEwWhcNMzUxMTEwMTQyOTEw
+      WjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3NjI5NTc3NTAwWTATBgcqhkjO
+      PQIBBggqhkjOPQMBBwNCAARn21w7q+Cd0I/GxFwI3fcZqs7vjArg1z3rxCCS8V87
+      jP/ynN/vP0ZBW5Pfi4mqlVMilXMU1o15gNvo/Q/4M8DPo0IwQDAOBgNVHQ8BAf8E
+      BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUuVNtHcTaTi+OYsSLn145
+      qltq5FcwCgYIKoZIzj0EAwIDSAAwRQIgAked4uo85RmiYctqN4LZMDhskZSM6Qhq
+      2DwCPdOU2hYCIQC2wqo4Pu7T4TzbzasCx/Mz08grHOL+KJJe/qB9CuiMVQ==
+      -----END CERTIFICATE-----
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubernetes.io/description: Contains a CA bundle that can be used to verify the
+        kube-apiserver when using internal endpoints such as the internal service
+        IP or kubernetes.default.svc. No other usage is guaranteed across distributions
+        of Kubernetes clusters.
+    creationTimestamp: "2025-11-12T14:33:01Z"
+    name: kube-root-ca.crt
+    namespace: nexus
+    resourceVersion: "541"
+    uid: 037dfd6f-b455-4dac-8902-10821bb227cf
+- apiVersion: v1
+  data:
+    APP_NAME: singiattend-server
+    EUREKA_DEFAULT: http://singiattend-service:8761/eureka
+    EUREKA_DISCOVERY_ENABLE: "true"
+    EUREKA_FETCH_REGISTRY: "true"
+    EUREKA_HOSTNAME: singiattend-service.nexus.svc.cluster.local
+    EUREKA_SHOULD_REGISTER: "true"
+    MONGO_HOST: singiattend-mongo-service:62810
+    PORT: "62811"
+    PROXY_APP_NAME: singiattend-student-proxy
+    PROXY_FEIGN_SINGIATTEND_CLIENT: singiattend-service.nexus.svc.cluster.local
+    PROXY_PORT: "62814"
+    TENANTS: |
+      [
+        {"tenantId":"SingidunumBG","db":"SingiAttend_BG"},
+        {"tenantId":"SingidunumNS","db":"SingiAttend_NS"},
+        {"tenantId":"SingidunumNIS","db":"SingiAttend_NIS"}
+      ]
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"APP_NAME":"singiattend-server","EUREKA_DEFAULT":"http://singiattend-service:8761/eureka","EUREKA_DISCOVERY_ENABLE":"true","EUREKA_FETCH_REGISTRY":"true","EUREKA_HOSTNAME":"singiattend-service.nexus.svc.cluster.local","EUREKA_SHOULD_REGISTER":"true","MONGO_HOST":"singiattend-mongo-service:62810","PORT":"62811","TENANTS":"[\n  {\"tenantId\":\"SingidunumBG\",\"db\":\"SingiAttend_BG\"},\n  {\"tenantId\":\"SingidunumNS\",\"db\":\"SingiAttend_NS\"},\n  {\"tenantId\":\"SingidunumNIS\",\"db\":\"SingiAttend_NIS\"}\n]\n"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"singiattend-cm","namespace":"nexus"}}
+    creationTimestamp: "2025-11-12T14:36:42Z"
+    labels:
+      k8slens-edit-resource-version: v1
+    name: singiattend-cm
+    namespace: nexus
+    resourceVersion: "813"
+    uid: 2a218787-031b-4ebf-aeb1-7f3383373ba3
+- apiVersion: v1
+  data:
+    .dockerconfigjson: eyJhdXRocyI6eyJob3N0LmxpbWEuaW50ZXJuYWw6NTAwMSI6eyJ1c2VybmFtZSI6ImFkbWluIiwicGFzc3dvcmQiOiIxMyhaS1xccyFsNylwIiwiZW1haWwiOiJtYXJrby5kb2praWNAZ21haWwuY29tIiwiYXV0aCI6IllXUnRhVzQ2TVRNb1drdGNjeUZzTnlsdyJ9fX0=
+  kind: Secret
+  metadata:
+    creationTimestamp: "2025-11-12T14:33:28Z"
+    name: madojkic-nexus
+    namespace: nexus
+    resourceVersion: "551"
+    uid: 7fa5c01a-dd7f-482e-a1d3-0dd7acd4acb0
+  type: kubernetes.io/dockerconfigjson
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    creationTimestamp: "2025-11-12T14:33:01Z"
+    name: default
+    namespace: nexus
+    resourceVersion: "542"
+    uid: 33217a32-e579-459c-a796-4ee58957347a
+kind: List
+metadata:
+  resourceVersion: ""
