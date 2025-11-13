@@ -41,8 +41,8 @@ server:
   ssl:
     key-store: classpath:ssl_keystore-signed.p12
     key-store-type: PKCS12
-    key-store-password: singiattend-server2021
-    key-password: singiattend-server2021
+    key-store-password: ${PROXY_SERVER_SSL_KEY_STORE_PASSWORD}
+    key-password: ${PROXY_SERVER_SSL_KEY_PASSWORD}
     enabled: true
     enabled-protocols: TLSv1.2,TLSv1.3
     protocol: TLS
