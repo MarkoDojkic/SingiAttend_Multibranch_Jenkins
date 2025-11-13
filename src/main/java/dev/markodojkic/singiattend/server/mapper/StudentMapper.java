@@ -4,6 +4,7 @@ import dev.markodojkic.singiattend.server.entity.Student;
 import dev.markodojkic.singiattend.server.model.StudentDTO;
 import org.mapstruct.DecoratedWith;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 import java.util.List;
 
@@ -13,6 +14,9 @@ import static org.mapstruct.MappingConstants.ComponentModel.SPRING;
 @DecoratedWith(StudentMapperDecorator.class)
 public interface StudentMapper {
     Student toEntity(final StudentDTO studentDTO);
+    
+    @Mapping(target = "study", ignore = true)
     StudentDTO toDTO(final Student student);
+    
     List<StudentDTO> toDTOList(final List<Student> students);
 }

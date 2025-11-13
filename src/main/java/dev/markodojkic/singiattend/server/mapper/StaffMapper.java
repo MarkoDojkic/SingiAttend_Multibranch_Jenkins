@@ -6,13 +6,22 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.mapstruct.MappingConstants.ComponentModel.SPRING;
 
 @Mapper(componentModel = SPRING)
 public interface StaffMapper {
     Staff toEntity(final StaffDTO staffDTO);
-    StaffDTO toDTO(final Staff staff);
+    
+    StaffDTO toDTO(final Staff staff);  // Includes password
+    
     @Mapping(target = "passwordHash", ignore = true)
-    List<StaffDTO> toDTOList(final List<Staff> staffList);
+    StaffDTO toDTOWithoutPassword(final Staff staff);  // Excludes password
+    
+    default List<StaffDTO> toDTOList(final List<Staff> staffList) {
+        return staffList.stream()
+            .map(this::toDTOWithoutPassword)
+            .toList();
+    }
 }

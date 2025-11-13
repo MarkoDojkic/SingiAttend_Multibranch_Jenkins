@@ -53,22 +53,22 @@ public class ClassInstanceRepository implements IClassInstanceRepository {
 
     @Override
     public ClassInstance getLastBySubjectId(String collection, String subjectId) {
-        TypedAggregation<ClassInstance> aggregation = Aggregation.newAggregation(ClassInstance.class,
+        @SuppressWarnings("NullableProblems") TypedAggregation<ClassInstance> aggregation = Aggregation.newAggregation(ClassInstance.class,
                 Aggregation.sort(Sort.Direction.DESC, "ended_at"),
                 Aggregation.match(Criteria.where(SUBJECT_ID).is(subjectId)),
                 Aggregation.limit(1));
-        
-        AggregationResults<ClassInstance> results = mongoTemplate.aggregate(aggregation, collection, ClassInstance.class);
+
+        @SuppressWarnings("NullableProblems") AggregationResults<ClassInstance> results = mongoTemplate.aggregate(aggregation, collection, ClassInstance.class);
         return results.getUniqueMappedResult();
     }
 
     @Override
     public List<ClassInstance> getAllBySubjectId(String collection, String subjectId) {
-        TypedAggregation<ClassInstance> aggregation = Aggregation.newAggregation(ClassInstance.class,
+        @SuppressWarnings("NullableProblems") TypedAggregation<ClassInstance> aggregation = Aggregation.newAggregation(ClassInstance.class,
                 Aggregation.match(Criteria.where(SUBJECT_ID).is(subjectId)),
                 Aggregation.sort(Sort.Direction.DESC, "ended_at"));
-        
-        AggregationResults<ClassInstance> results = mongoTemplate.aggregate(aggregation, collection, ClassInstance.class);
+
+        @SuppressWarnings("NullableProblems") AggregationResults<ClassInstance> results = mongoTemplate.aggregate(aggregation, collection, ClassInstance.class);
         return results.getMappedResults();
     }
 

@@ -146,15 +146,15 @@ pipeline {
                     withCredentials([string(credentialsId: 'gpg-passphrase', variable: 'GPG_PASS')]) {
                         sh """
                              git fetch --tags --force
-                             git tag -d singiattend-server-${versionTag} 2>/dev/null || true
-                             git push origin :refs/tags/singiattend-server-${versionTag} 2>/dev/null || true
+                             git tag -d singiattend-server-${version} 2>/dev/null || true
+                             git push origin :refs/tags/singiattend-server-${version} 2>/dev/null || true
 
                              printf "%s" "$GPG_PASS" | git -c gpg.passphrase-fd=0 tag -s -u "$GPG_KEY_ID" \
-                                 -m "Release singiattend/server:${versionTag} (branch: ${BRANCH_NAME})" \
-                                 singiattend-server-${versionTag}
+                                 -m "Release singiattend/server:${version} (branch: ${BRANCH_NAME})" \
+                                 singiattend-server-${version}
 
-                             git verify-tag -v singiattend-server-${versionTag}
-                             git push origin singiattend-server-${versionTag}
+                             git verify-tag -v singiattend-server-${version}
+                             git push origin singiattend-server-${version}
                         """
                     }
                 }
