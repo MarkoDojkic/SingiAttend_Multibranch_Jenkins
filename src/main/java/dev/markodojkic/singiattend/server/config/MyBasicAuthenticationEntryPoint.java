@@ -12,13 +12,14 @@ import java.io.PrintWriter;
 @Component
 public class MyBasicAuthenticationEntryPoint extends BasicAuthenticationEntryPoint {
 
+    @SuppressWarnings("NullableProblems")
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authEx)
             throws IOException {
         response.addHeader("WWW-Authenticate", String.format("Basic realm=\"%s\"", getRealmName()));
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         PrintWriter writer = response.getWriter();
-        writer.printf("HTTP Status 401 - %s\n", authEx.getMessage());
+        writer.printf("HTTP Status 401 - %s%n", authEx.getMessage());
     }
 
     @Override

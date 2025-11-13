@@ -11,6 +11,7 @@ import org.springframework.data.mongodb.MongoDatabaseFactory;
 
 import java.util.Map;
 
+@SuppressWarnings({"ClassCanBeRecord", "NullableProblems"})
 @Slf4j
 public class MultiTenantMongoDatabaseFactory implements MongoDatabaseFactory {
 

@@ -17,7 +17,6 @@ import org.springframework.data.mongodb.MongoDatabaseFactory;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.SimpleMongoClientDatabaseFactory;
 import org.springframework.data.mongodb.core.convert.*;
-import org.springframework.util.function.ThrowingConsumer;
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 
@@ -71,6 +70,7 @@ public class MultiTenantMongoConfig {
         return new MongoTemplate(mongoDatabaseFactory);
     }
 
+    @SuppressWarnings("NullableProblems")
     @Bean
     public FilterRegistrationBean<TenantFilter> tenantFilterRegistration(TenantFilter filter) {
         FilterRegistrationBean<TenantFilter> registration = new FilterRegistrationBean<>();

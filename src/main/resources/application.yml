@@ -11,6 +11,10 @@ eureka:
     fetch-registry: ${EUREKA_FETCH_REGISTRY:false}
     service-url:
       defaultZone: ${EUREKA_DEFAULT:http://localhost:8761/eureka/}
+    tls:
+      enabled: true
+      trust-store: ${EUREKA_TRUST_STORE:file:/usr/lib/jvm/default-jvm/lib/security/cacerts}
+      trust-store-password: ${EUREKA_TRUST_STORE_PASSWORD:changeit}
   instance:
     prefer-ip-address: false
     hostname: ${EUREKA_HOSTNAME:localhost}
@@ -46,8 +50,8 @@ server:
   ssl:
     key-store: classpath:ssl_keystore-signed.p12
     key-store-type: PKCS12
-    key-store-password: singiattend-server2021
-    key-password: singiattend-server2021
+    key-store-password: ${SERVER_SSL_KEY_STORE_PASSWORD}
+    key-password: ${SERVER_SSL_KEY_PASSWORD}
     enabled: true
     enabled-protocols: TLSv1.2,TLSv1.3
     protocol: TLS
