@@ -11,7 +11,7 @@
 
     <groupId>dev.markodojkic</groupId>
     <artifactId>SingiAttend-Student_Proxy</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>SingiAttend Student Proxy</name>
     <description>SingiAttend student proxy for mobile applications</description>
     <properties>
