@@ -15,6 +15,7 @@ public class StudentMapperDecorator implements StudentMapper {
     private IStudyRepository studyRepository;
     private StudyMapper studyMapper;
 
+    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     @Autowired
     public void setStudentMapper(@Qualifier("studentMapperImpl_") StudentMapper studentMapper) {
         this.studentMapper = studentMapper;
@@ -38,7 +39,7 @@ public class StudentMapperDecorator implements StudentMapper {
     @Override
     public StudentDTO toDTO(Student student) {
         StudentDTO studentDTO = studentMapper.toDTO(student);
-        studentDTO.setStudy(studyMapper.toDTO(studyRepository.findById(studentDTO.getStudyId()).orElse(null)));
+        studentDTO.setStudy(studyMapper.toDTO(studyRepository.findById(student.getStudyId()).orElse(null)));
         return studentDTO;
     }
 

@@ -17,6 +17,7 @@ public class SubjectMapperDecorator implements SubjectMapper {
     private SubjectMapper subjectMapper;
     private ServerService serverService;
 
+    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     @Autowired
     public void setSubjectMapper(@Qualifier("subjectMapperImpl_") SubjectMapper subjectMapper) {
         this.subjectMapper = subjectMapper;

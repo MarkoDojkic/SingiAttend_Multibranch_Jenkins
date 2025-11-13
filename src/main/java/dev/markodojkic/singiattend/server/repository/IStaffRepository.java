@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
+@SuppressWarnings("NullableProblems")
 @Repository
 public interface IStaffRepository extends MongoRepository<Staff, String> {
     @Query(value="{'email': {$regex : ?0, $options: 'i'}}")

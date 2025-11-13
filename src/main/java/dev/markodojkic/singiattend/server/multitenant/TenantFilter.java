@@ -11,6 +11,7 @@ import java.io.IOException;
 
 @Component
 public class TenantFilter extends OncePerRequestFilter {
+    @SuppressWarnings("NullableProblems")
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {

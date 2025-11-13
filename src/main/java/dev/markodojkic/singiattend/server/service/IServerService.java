@@ -3,7 +3,6 @@ package dev.markodojkic.singiattend.server.service;
 import dev.markodojkic.singiattend.server.entity.AttendanceHelperInstance;
 import dev.markodojkic.singiattend.server.model.*;
 
-import java.text.ParseException;
 import java.util.List;
 
 public interface IServerService {
@@ -14,7 +13,7 @@ public interface IServerService {
     StudentDTO updateStudentById(String studentId, StudentDTO newStudent);
     String checkPasswordStudent(String index, String plainPassword);
     String getNameSurnameStudent(String index);
-    List<CourseDataInstance> getCourseData(String index) throws ParseException;
+    List<CourseDataInstance> getCourseData(String index);
     String recordAttendance(String subjectId, String index, boolean isExercise);
     List<AttendanceDataInstance> getAttendanceData(String index);
     List<AttendanceHelperInstance> getSubjectsByProfessorId(String professorId); //Aggregation

@@ -5,7 +5,6 @@ import dev.markodojkic.singiattend.server.mapper.*;
 import dev.markodojkic.singiattend.server.model.*;
 import dev.markodojkic.singiattend.server.repository.*;
 import org.bson.types.ObjectId;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
@@ -30,6 +29,7 @@ import java.util.*;
 public class ServerService implements IServerService {
     public static final String LECTURES = "Lectures";
     public static final String EXERCISES = "Exercises";
+    public static final String INDEX_FORMAT = "%s/%s";
     private final ClassInstanceMapper classInstanceMapper;
     private final StaffMapper staffMapper;
     private final StudentMapper studentMapper;
@@ -103,17 +103,17 @@ public class ServerService implements IServerService {
 
     @Override
     public String checkPasswordStudent(String index, String plainPassword) {
-        return studentRepository.getByIndex(String.format("%s/%s", index.substring(0, index.length() - 6), index.substring(index.length() - 6))).map(foundStudent -> plainPassword.equals(decryptPassword(foundStudent.getPasswordHash())) ? "VALID" : "INVALID").orElse("UNKNOWN");
+        return studentRepository.getByIndex(String.format(INDEX_FORMAT, index.substring(0, index.length() - 6), index.substring(index.length() - 6))).map(foundStudent -> plainPassword.equals(decryptPassword(foundStudent.getPasswordHash())) ? "VALID" : "INVALID").orElse("UNKNOWN");
     }
 
     @Override
     public String getNameSurnameStudent(String index) {
-        return studentRepository.getByIndex(String.format("%s/%s", index.substring(0, index.length() - 6), index.substring(index.length() - 6))).map(Student::getNameSurname).orElse("-???-");
+        return studentRepository.getByIndex(String.format(INDEX_FORMAT, index.substring(0, index.length() - 6), index.substring(index.length() - 6))).map(Student::getNameSurname).orElse("-???-");
     }
 
     @Override
     public List<CourseDataInstance> getCourseData(String index) {
-        final String criteria = studentRepository.getByIndex(String.format("%s/%s", index.substring(0, index.length() - 6), index.substring(index.length() - 6))).map(student -> String.format("%s_%s", student.getStudyId(), student.getYear())).orElse("");
+        final String criteria = studentRepository.getByIndex(String.format(INDEX_FORMAT, index.substring(0, index.length() - 6), index.substring(index.length() - 6))).map(student -> String.format("%s_%s", student.getStudyId(), student.getYear())).orElse("");
         List<CourseDataInstance> output = new ArrayList<>();
         final Date from = Date.from(Instant.now().minus(15, ChronoUnit.MINUTES));
         final Date to = Date.from(Instant.now());
@@ -133,7 +133,7 @@ public class ServerService implements IServerService {
 
     @Override
     public String recordAttendance(String id, String index, boolean isExercise) {
-        final String studentId = studentRepository.getByIndex(String.format("%s/%s", index.substring(0, index.length() - 6), index.substring(index.length() - 6))).map(Student::getId).orElse("");
+        final String studentId = studentRepository.getByIndex(String.format(INDEX_FORMAT, index.substring(0, index.length() - 6), index.substring(index.length() - 6))).map(Student::getId).orElse("");
         if(studentId.isEmpty()) return "";
         ClassInstance classInstance = classInstanceRepository.findById((isExercise ? EXERCISES : LECTURES), id);
         var attendedStudents = classInstance.getAttendedStudents();
@@ -144,10 +144,11 @@ public class ServerService implements IServerService {
         return "SUCCESSFULLY RECORDED ATTENDANCE";
     }
 
+    @SuppressWarnings("NullableProblems")
     @Override
     public List<AttendanceDataInstance> getAttendanceData(String index) {
         List<AttendanceDataInstance> output = new ArrayList<>();
-        Student student = studentRepository.getByIndex(String.format("%s/%s", index.substring(0, index.length() - 6), index.substring(index.length() - 6))).orElse(null);
+        Student student = studentRepository.getByIndex(String.format(INDEX_FORMAT, index.substring(0, index.length() - 6), index.substring(index.length() - 6))).orElse(null);
         if(student == null) return output;
 
         AggregationResults<AttendanceHelperInstance> attendanceHelperInstances = subjectRepository.getAttendanceHelperInstance(String.format("%s_%s", student.getStudyId(), student.getYear()));
@@ -345,7 +346,7 @@ public class ServerService implements IServerService {
 
             return Base64.getEncoder().encodeToString(encryptedWithIv);
         } catch (InvalidAlgorithmParameterException | NoSuchPaddingException | IllegalBlockSizeException |
-                 NoSuchAlgorithmException | BadPaddingException | InvalidKeyException e) {
+                 NoSuchAlgorithmException | BadPaddingException | InvalidKeyException _) {
             return "?";
         }
     }
@@ -369,7 +370,7 @@ public class ServerService implements IServerService {
 
             return new String(plainText, StandardCharsets.UTF_8);
         } catch (InvalidAlgorithmParameterException | NoSuchPaddingException | IllegalBlockSizeException |
-                NoSuchAlgorithmException | BadPaddingException | InvalidKeyException e) {
+                NoSuchAlgorithmException | BadPaddingException | InvalidKeyException _) {
             return null;
         }
     }

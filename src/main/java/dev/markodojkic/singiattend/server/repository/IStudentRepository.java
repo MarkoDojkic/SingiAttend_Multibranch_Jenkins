@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
+@SuppressWarnings("NullableProblems")
 @Repository
 public interface IStudentRepository extends MongoRepository<Student, String> {
     @Query("{ 'index': { $regex: ?0, $options: 'i' } }")
