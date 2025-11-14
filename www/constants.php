@@ -10,4 +10,3 @@
     define("SERVER_PORT", "62811"); #Proxy app port
     define("SERVER_USERNAME", "singiattend-admin");
     define("SERVER_PASSWORD", "singiattend-server2021");
-?>

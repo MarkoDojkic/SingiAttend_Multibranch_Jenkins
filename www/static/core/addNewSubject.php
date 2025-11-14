@@ -1,6 +1,6 @@
 <?php
     session_start();
-    require "../../constants.php";
+    require_once "../../constants.php";
 
     $xml = @simplexml_load_file(DIR_ROOT . DIR_LANGUAGES . "/{$_SESSION["language"]}.xml")  or die(file_get_contents(DIR_ROOT . "/error404.html"));
 
@@ -9,11 +9,11 @@
     $studies = array();
     $years = array();
 
-    if (empty($subject_name) || substr_count($subject_name, "/") !== 1 || strpos($subject_name, "/") === 0 || strpos($subject_name, "/") === strlen($subject_name) - 1) $errors[] = "wrong_sN"; 
+    if (empty($subject_name) || substr_count($subject_name, "/") !== 1 || strpos($subject_name, "/") === 0 || strpos($subject_name, "/") === strlen($subject_name) - 1) { $errors[] = "wrong_sN" };
     
-    if (@$_POST['studies'] === null) $errors[] = "did_not_selected_any_study";
+    if (@$_POST['studies'] === null) { $errors[] = "did_not_selected_any_study" };
 
-    if(sizeof($errors) !== 0){
+    if(!empty($errors)){
         foreach ($errors as $errorName){
             echo "<i style='color:red;font-size:14px;'> - " . $xml->errors->{$errorName}[0] . "</i><br><br>";
         }
@@ -21,7 +21,7 @@
     else {
         $checkingTitle_temp = explode("/",$subject_name)[0];
 
-        $server_request = curl_init("https://" . SERVER_URL . SERVER_PORT . "/api/addNewSubject");
+        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/addNewSubject");
 
         $subjectData = json_encode(array(
             "title" => explode("/",$subject_name)[0],
@@ -46,8 +46,9 @@
 
         $response = curl_exec($server_request);
         
-        if(!$response)
+        if(!$response){
             echo "<i style='color:red;font-size:14px;'> - {$xml->professorPage->addSubjectFailed[0]}</i><br><br>";
+        }
         else {
             echo "<i style='color:green;font-size:14px;'> + {$xml->professorPage->addSubjectSuccessfull[0]}</i><br><br>";
 
@@ -58,4 +59,3 @@
 
         curl_close($server_request);
     }
-?>

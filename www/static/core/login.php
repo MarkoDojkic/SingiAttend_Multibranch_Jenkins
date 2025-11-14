@@ -1,6 +1,6 @@
 <?php
     session_start();
-    require "../../constants.php";
+    require_once "../../constants.php";
         
     $xml = @simplexml_load_file(DIR_ROOT . DIR_LANGUAGES . "/{$_SESSION["language"]}.xml")  or die(file_get_contents(DIR_ROOT . "/error404.html"));
 
@@ -21,7 +21,7 @@
     else {
         if($password === null) $errors[] = "userNotFound";
         else {
-            $server_request = curl_init("https://" . SERVER_URL . SERVER_PORT . "/api/csrfLogin");
+            $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/csrfLogin");
 
             curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($server_request, CURLOPT_HEADER, true); //Capture headers
@@ -53,7 +53,7 @@
 
             curl_close($server_request);
 
-            $server_request = curl_init("https://" . SERVER_URL . SERVER_PORT . "/api/checkPassword/staff/" . $id);
+            $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/checkPassword/staff/" . $id);
 
             curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);  // To return the response as a string
             curl_setopt($server_request, CURLOPT_CUSTOMREQUEST, "POST");  // Set request type to POST
@@ -74,7 +74,7 @@
             } else {
                 if (!str_contains($response, ":professor") && !str_contains($response, ":assistant")) {
                     $errors[] = "wrong_pass";
-                    $server_request = curl_init("https://" . SERVER_URL . SERVER_PORT . "/api/csrfLogout");
+                    $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/csrfLogout");
 
                     curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
                     curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -111,4 +111,3 @@
         unset($_SESSION['captcha_text']);
         echo '<script>parent.reloadCaptcha();</script>';
     }
-?>

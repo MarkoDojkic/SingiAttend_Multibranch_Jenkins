@@ -1,7 +1,7 @@
 <?php
 
     session_start();
-    require "../../constants.php";
+    require_once "../../constants.php";
 
     $xml = @simplexml_load_file(DIR_ROOT . DIR_LANGUAGES . "/{$_SESSION["language"]}.xml")  or die(file_get_contents(DIR_ROOT . "/error404.html"));
 
@@ -9,7 +9,7 @@
     $primaryKey = $table . '_id';
 
     if($table === 'lecture'){
-        $server_request = curl_init("https://" . SERVER_URL . SERVER_PORT . "/api/getLecture/" . $_POST["$primaryKey"]);
+        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/getLecture/" . $_POST["$primaryKey"]);
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -25,7 +25,7 @@
 
         curl_close($server_request);
     } else {
-        $server_request = curl_init("https://" . SERVER_URL . SERVER_PORT . "/api/getExercise/" . $_POST["$primaryKey"]);
+        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/getExercise/" . $_POST["$primaryKey"]);
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -48,7 +48,7 @@
     $attendance = $xml->{($table === 'lecture' ? "professor" : "assistant") . "Page"}->notOverYet[0];
 
     if(new DateTime() >= $endedAt) {
-        $server_request = curl_init("https://" . SERVER_URL . SERVER_PORT . "/api/totalStudents/" . $data['subjectId']);
+        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/totalStudents/" . $data['subjectId']);
             
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -90,4 +90,3 @@
                 </tr>
             </tbody>
         </table>";
-?>

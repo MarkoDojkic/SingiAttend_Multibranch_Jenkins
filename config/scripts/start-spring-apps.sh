@@ -10,7 +10,7 @@ echo "✅ Eureka is up."
 
 # 2. Start SingiAttend Server in background
 echo "🚀 Starting SingiAttend Server..."
-java -jar /var/www/SingiAttend-Server.jar &
+exec java -jar /var/www/SingiAttend-Server.jar &
 SERVER_PID=$!
 
 # 3. Wait for SingiAttend Server health check
@@ -20,6 +20,14 @@ until curl -sf http://localhost:8761/eureka/apps/singiattend-server > /dev/null;
 done
 echo "✅ SingiAttend Server is up."
 
-# 4. Start Student Proxy (foreground, so container stays running)
+# 4. Start SingiAttend Student Proxy in background
 echo "🚀 Starting SingiAttend Student Proxy..."
-exec java -jar /var/www/SingiAttend-Student_Proxy.jar
+exec java -jar /var/www/SingiAttend-Student_Proxy.jar &
+STUDENT_PROXY_PID=$!
+
+# 5. Wait for SingiAttend Student Proxy health check
+echo "⏳ Waiting for SingiAttend Student Proxy on port 62814..."
+until curl -sf http://localhost:8761/eureka/apps/singiattend-student-proxy > /dev/null; do
+  sleep 3
+done
+echo "✅ SingiAttend Student Proxy is up."

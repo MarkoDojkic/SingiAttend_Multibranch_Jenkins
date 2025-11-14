@@ -1,7 +1,7 @@
 <?php
 
     session_start();
-    require "../../constants.php";
+    require_once "../../constants.php";
 
     $xml = @simplexml_load_file(DIR_ROOT . DIR_LANGUAGES . "/{$_SESSION["language"]}.xml")  or die(file_get_contents(DIR_ROOT . "/error404.html"));
     $attended = "";
@@ -9,7 +9,7 @@
     $attendancesData = "";
     $datesData = "[";
 
-    $server_request = curl_init("https://" . SERVER_URL . SERVER_PORT . "/api/totalStudents/" . $_POST["subjectSelection"]);
+    $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/totalStudents/" . $_POST["subjectSelection"]);
                 
     curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -187,7 +187,7 @@
         $notAttended = "";
         $datesData = "[";
         
-        $server_request = curl_init("https://" . SERVER_URL . SERVER_PORT . "/api/getAll" . $attendanceFor . "/" . $_POST["subjectSelection"]);
+        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/getAll" . $attendanceFor . "/" . $_POST["subjectSelection"]);
 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -235,4 +235,3 @@
 
         return array($datesData, $attendancesData, round(($totalAttendedStudentsSum / ($totalStudents*sizeof($response))) * 100));
     }
-?>
