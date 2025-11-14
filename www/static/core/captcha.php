@@ -1,11 +1,11 @@
 <?php
     //Downloaded from https://code.tutsplus.com/tutorials/build-your-own-captcha-and-contact-form-in-php--net-5362
     session_start();
-    require "../../constants.php";
+    use "../../constants.php";
     
     $permitted_chars = 'ABCDEFGHJKLMNOPQRSTUVWXYZ';
     
-    function generate_string($input, $strength = 10) {
+    function generateString($input, $strength = 10) {
         $input_length = strlen($input);
         $random_string = '';
         for($i = 0; $i < $strength; $i++) {
@@ -49,7 +49,7 @@
     $string_length = 6;
     // If captcha text not yet set, generate it
     if (!isset($_SESSION['captcha_text'])) {
-        $_SESSION['captcha_text'] = generate_string($permitted_chars, 6);
+        $_SESSION['captcha_text'] = generateString($permitted_chars, 6);
     }
 
     $captcha_string = $_SESSION['captcha_text'];
@@ -64,4 +64,3 @@
     header('Content-type: image/png');
     imagepng($image);
     imagedestroy($image);
-?>

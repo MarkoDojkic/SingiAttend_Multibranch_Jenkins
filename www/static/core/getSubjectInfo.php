@@ -1,6 +1,6 @@
 <?php
     session_start();
-    require "../../constants.php";
+    use "../../constants.php";
 
     $temp = $_SESSION["loggedInAs"] == "professor" ? "assistant"  : "professor";
 
@@ -25,4 +25,3 @@
     echo "
         {$xml->professorPage->subject_name[0]}: <br><b> {$data["title"]}<br>{$data["titleEnglish"]}</b> <br>
     " . ($data["assistantId"] == null);
-?>

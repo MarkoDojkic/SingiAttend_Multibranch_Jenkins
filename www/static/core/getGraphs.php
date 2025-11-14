@@ -1,7 +1,7 @@
 <?php
 
     session_start();
-    require "../../constants.php";
+    use "../../constants.php";
 
     $xml = @simplexml_load_file(DIR_ROOT . DIR_LANGUAGES . "/{$_SESSION["language"]}.xml")  or die(file_get_contents(DIR_ROOT . "/error404.html"));
     $attended = "";
@@ -235,4 +235,3 @@
 
         return array($datesData, $attendancesData, round(($totalAttendedStudentsSum / ($totalStudents*sizeof($response))) * 100));
     }
-?>

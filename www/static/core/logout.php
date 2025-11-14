@@ -1,6 +1,6 @@
 <?php
     session_start();
-    require "../../constants.php";
+    use "../../constants.php";
 
     if($_SESSION['isAdminLoggedIn']){
         foreach(["SingidunumBG", "SingidunumNS", "SingidunumNIS"] as $proxyIdentifier){
@@ -31,4 +31,3 @@
     session_unset();
     session_destroy();
     header("Location: /index.php", true, 307);
-?>
