@@ -1,6 +1,6 @@
 <?php
     session_start();
-    require "../../constants.php";
+    require_once "../../constants.php";
 
     $xml = @simplexml_load_file(DIR_ROOT . DIR_LANGUAGES . "/{$_SESSION["language"]}.xml")  or die(file_get_contents(DIR_ROOT . "/error404.html"));
 
@@ -16,7 +16,7 @@
     }
 
     function showDetails($id,$xml){
-        $server_request = curl_init("https://" . SERVER_URL . SERVER_PORT . "/api/getSubject/" . $id);
+        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/getSubject/" . $id);
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -73,7 +73,7 @@
         $alert = "{$xml->assistantPage->viewStudentsText[0]}";
         $localization = $_SESSION["language"] === "english" ? "titleEnglish" : "title";
         
-        $server_request = curl_init("https://" . SERVER_URL . SERVER_PORT . "/api/allStudentBySubjectId/" . $id);
+        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/allStudentBySubjectId/" . $id);
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -106,7 +106,7 @@
 
     function viewExercises($id,$xml){
 
-        $server_request = curl_init("https://" . SERVER_URL . SERVER_PORT . "/api/subjectIsInactiveById/" . $id);
+        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/subjectIsInactiveById/" . $id);
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -132,7 +132,7 @@
 
         $exercises = "<option value=''>-</option>";
 
-        $server_request = curl_init("https://" . SERVER_URL . SERVER_PORT . "/api/getAllExercises/" . $id);
+        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/getAllExercises/" . $id);
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -215,7 +215,7 @@
 
     function startNewExercise($id,$xml){
 
-        $server_request = curl_init("https://" . SERVER_URL . SERVER_PORT . "/api/getLastExercise/" . $id);
+        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/getLastExercise/" . $id);
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -243,7 +243,7 @@
             }
         }
 
-        $server_request = curl_init("https://" . SERVER_URL . SERVER_PORT . "/api/insert/exercise/" . $id . "/" . $_POST['start_time'] . "/" . $_POST['end_time']);
+        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/insert/exercise/" . $id . "/" . $_POST['start_time'] . "/" . $_POST['end_time']);
             
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, false);
         curl_setopt($server_request, CURLOPT_CUSTOMREQUEST, "PUT");
@@ -262,4 +262,3 @@
 
         viewExercises($id,$xml);
     }
-?>

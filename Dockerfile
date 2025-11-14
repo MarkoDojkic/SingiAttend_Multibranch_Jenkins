@@ -9,6 +9,8 @@ FROM alpine:edge AS base
 RUN echo "@edge https://nl.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories && \
     echo "https://dl-cdn.alpinelinux.org/alpine/v3.16/main" >> /etc/apk/repositories && \
     echo "https://dl-cdn.alpinelinux.org/alpine/v3.16/community" >> /etc/apk/repositories && \
+    echo "https://dl-cdn.alpinelinux.org/alpine/v3.23/main" >> /etc/apk/repositories && \
+    echo "https://dl-cdn.alpinelinux.org/alpine/v3.23/community" >> /etc/apk/repositories && \
     apk update && apk upgrade && \
     apk add --no-cache \
         bash \
@@ -17,7 +19,7 @@ RUN echo "@edge https://nl.alpinelinux.org/alpine/edge/main" >> /etc/apk/reposit
         curl \
         nginx \
         nss \
-        openjdk24 \
+        openjdk25 \
         openrc \
         php81 \
         php81-ctype \
@@ -44,28 +46,34 @@ RUN echo "@edge https://nl.alpinelinux.org/alpine/edge/main" >> /etc/apk/reposit
 ############################################################
 FROM base AS builder
 
-# Build arguments for versioning and Nexus access
+# Build arguments for Nexus access
 ARG NEXUS_URL
 ARG NEXUS_USER
 ARG NEXUS_PASS
-ARG BE_JAR_VERSION
-ARG BE_JAR_SUFFIX
-ARG EUREKA_JAR_VERSION
-ARG EUREKA_JAR_SUFFIX
-ARG STUDENT_PROXY_JAR_VERSION
-ARG STUDENT_PROXY_JAR_SUFFIX
 
 SHELL ["/bin/bash", "-c"]
-
-# Install curl
 RUN apk add --no-cache curl
-
-# Create downloads directory
 RUN mkdir -p /downloads
 
-# Copy a small script that handles JAR downloads
-COPY config/scripts/download-jars.sh /tmp/download_jars.sh
-RUN chmod +x /tmp/download-jars.sh && /tmp/download-jars.sh
+# Copy script once
+COPY config/scripts/download-jars.sh /tmp/download-jars.sh
+RUN chmod +x /tmp/download-jars.sh
+
+# Build layer per JAR to leverage caching
+ARG BE_JAR_VERSION
+ARG BE_JAR_SUFFIX
+RUN /tmp/download-jars.sh "SingiAttend-Server" "$BE_JAR_VERSION" "$BE_JAR_SUFFIX" "maven-releases"
+
+
+ARG EUREKA_JAR_VERSION
+ARG EUREKA_JAR_SUFFIX
+RUN /tmp/download-jars.sh "eurekaserver" "$EUREKA_JAR_VERSION" "$EUREKA_JAR_SUFFIX" "maven-releases"
+
+
+ARG STUDENT_PROXY_JAR_VERSION
+ARG STUDENT_PROXY_JAR_SUFFIX
+RUN /tmp/download-jars.sh "SingiAttend-Student_Proxy" "$STUDENT_PROXY_JAR_VERSION" "$STUDENT_PROXY_JAR_SUFFIX" "maven-releases"
+
 
 ############################################################
 # Stage 3: Final image

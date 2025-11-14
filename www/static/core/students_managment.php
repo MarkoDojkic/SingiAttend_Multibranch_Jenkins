@@ -1,6 +1,6 @@
 <?php
     session_start();
-    require "../../constants.php";
+    require_once "../../constants.php";
 
     $xml = @simplexml_load_file(DIR_ROOT . DIR_LANGUAGES . "/{$_SESSION["language"]}.xml")  or die(file_get_contents(DIR_ROOT . "/error404.html"));    
 
@@ -17,7 +17,7 @@
         $password_pattern = "/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/";
 
         if($_POST["newNS_$id"] !== null && preg_match_all($nameSurname_pattern, $_POST["newNS_$id"])){
-            $server_request = curl_init("https://" . SERVER_URL . SERVER_PORT . "/api/update/student/" . $id);
+            $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/update/student/" . $id);
                 
             curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($server_request, CURLOPT_CUSTOMREQUEST, "PATCH");
@@ -38,7 +38,7 @@
         }
 
         if($_POST["newIX_$id"] !== null && preg_match_all("[12]{1}[0-9]{3}\\/[0-9]{6}",$_POST["newIX_$id"])){
-            $server_request = curl_init("https://" . SERVER_URL . SERVER_PORT . "/api/update/student/" . $id);
+            $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/update/student/" . $id);
                 
             curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($server_request, CURLOPT_CUSTOMREQUEST, "PATCH");
@@ -59,7 +59,7 @@
         }
 
         if($_POST["newUE_$id"] !== null){
-            $server_request = curl_init("https://" . SERVER_URL . SERVER_PORT . "/api/update/student/" . $id);
+            $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/update/student/" . $id);
                 
             curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($server_request, CURLOPT_CUSTOMREQUEST, "PATCH");
@@ -80,7 +80,7 @@
         }
 
         if($_POST["newPASS_$id"] !== null && preg_match_all($password_pattern, $_POST["newPASS_$id"])){
-            $server_request = curl_init("https://" . SERVER_URL . SERVER_PORT . "/api/update/student/" . $id);
+            $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/update/student/" . $id);
                 
             curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($server_request, CURLOPT_CUSTOMREQUEST, "PATCH");
@@ -118,7 +118,7 @@
 
     function deleteStudent($id,$xml){
 
-        $server_request = curl_init("https://" . SERVER_URL . SERVER_PORT . "/api/delete/student/" . $id);
+        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/delete/student/" . $id);
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_CUSTOMREQUEST, "DELETE");
@@ -147,4 +147,3 @@
     function showErrorAlert($message){
         echo "<script>alert('$message');</script>";
     }
-?>
