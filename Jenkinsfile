@@ -12,7 +12,7 @@ pipeline {
     environment {
         PATH = "/usr/bin:/usr/local/bin/:${env.PATH}"
         DOCKER_IMAGE_NAME = "singiattend-appstack"
-        NEXUS_DOCKER_URL = "host.docker.internal:5001"
+        NEXUS_DOCKER_URL = "markodojkic.local:5001"
         VERSION_FILE = "VERSION"
         DOCKER_BUILDKIT = '1'
         GPG_KEY_ID = "F7CC88ED5C36404B4BA4B1FE039F7DC7EFE5D537"
@@ -100,7 +100,7 @@ pipeline {
 
                             DOCKER_BUILDKIT=1 docker build \
                                 --cache-from ${NEXUS_DOCKER_URL}/${DOCKER_IMAGE_NAME}:latest \
-                                --build-arg NEXUS_URL=http://host.lima.internal:8081 \
+                                --build-arg NEXUS_URL=https://markodojkic.local:8444 \
                                 --build-arg NEXUS_USER=\$NEXUS_USER \
                                 --build-arg NEXUS_PASS=\$NEXUS_PASS \
                                 --build-arg BE_JAR_VERSION=${params.BE_VERSION} \
@@ -149,7 +149,7 @@ pipeline {
                         sonar-scanner \
                             -Dsonar.projectKey=SingiAttend-Server-Jenkins \
                             -Dsonar.sources=www \
-                            -Dsonar.host.url=http://localhost:9000 \
+                            -Dsonar.host.url=https://markodojkic.local:8445 \
                             -Dsonar.login=${SONAR_PASS}
                     """
                 }
