@@ -38,18 +38,24 @@ pipeline {
     }
 
     environment {
-        NEXUS_RELEASE_URL = "http://localhost:8081/repository/maven-releases/"
-        NEXUS_SNAPSHOT_URL = "http://localhost:8081/repository/maven-snapshots/"
-        SONAR_URL = "http://localhost:9000"
+        NEXUS_RELEASE_URL = "https://nexus.markodojkic.local/repository/maven-releases/"
+        NEXUS_SNAPSHOT_URL = "https://nexus.markodojkic.local/repository/maven-snapshots/"
+        SONAR_URL = "https://sonar.markodojkic.local"
 
         GPG_KEY_ID = "F7CC88ED5C36404B4BA4B1FE039F7DC7EFE5D537"
         GPG_HOME = "${WORKSPACE}/.gnupg"
         PATH = "/usr/local/MacGPG2/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:${env.PATH}"
+
+        DOCKER_IMAGE_NAME = "singiattend-student-proxy"
+        NEXUS_DOCKER_URL = "markodojkic.local:5001"
+        DOCKER_BUILDKIT = '1'
     }
 
     parameters {
         booleanParam(name: 'SKIP_BUILD', defaultValue: false, description: 'Skip the entire build process')
         booleanParam(name: 'SKIP_DEPLOY', defaultValue: false, description: 'Skip deployment to Nexus')
+        booleanParam(name: 'SKIP_DOCKER', defaultValue: false, description: 'Skip Docker build')
+        booleanParam(name: 'SKIP_DOCKER_DEPLOY', defaultValue: false, description: 'Skip Docker deployment to Nexus')
         booleanParam(name: 'RUN_SONAR', defaultValue: false, description: 'Run SonarQube analysis')
         choice(name: 'VERSION_ACTION', choices: ['none', 'bump-development', 'release'], description: 'Versioning action')
         booleanParam(name: 'TAG_THIS_BUILD', defaultValue: false, description: 'Create Git tag')
@@ -113,7 +119,9 @@ pipeline {
             steps {
                 script {
                     def pom = readMavenPom file: 'pom.xml'
-                    echo "Project: ${pom.artifactId} (${pom.version})"
+                    echo "Project Name: ${pom.name}"
+                    echo "ArtifactId: ${pom.artifactId}"
+                    echo "Version: ${pom.version}"
                 }
             }
         }
@@ -137,7 +145,7 @@ pipeline {
 
                     echo "New version: ${nextVersion}"
 
-                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 24') {
+                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 25') {
                         sh """
                             mvn versions:set -DnewVersion=${nextVersion}
                             mvn versions:commit
@@ -156,7 +164,7 @@ pipeline {
         stage('Build') {
             when { expression { !params.SKIP_BUILD } }
             steps {
-                withMaven(maven: 'Maven 4.0', jdk: 'JDK 24') {
+                withMaven(maven: 'Maven 4.0', jdk: 'JDK 25') {
                     sh 'mvn clean install -DskipTests -B'
                 }
             }
@@ -171,7 +179,7 @@ pipeline {
             }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'sonar-creds', usernameVariable: 'SONAR_USER', passwordVariable: 'SONAR_PASS')]) {
-                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 24') {
+                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 25') {
                         sh """
                             mvn sonar:sonar \
                                 -Dsonar.projectKey=SingiAttend-Server-Jenkins \
@@ -195,8 +203,50 @@ pipeline {
                     def pom = readMavenPom file: 'pom.xml'
                     def deployUrl = pom.version.endsWith("SNAPSHOT") ? NEXUS_SNAPSHOT_URL : NEXUS_RELEASE_URL
 
-                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 24') {
+                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 25') {
                         sh "mvn deploy -Dnexus.url=${deployUrl}"
+                    }
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            when { expression { !params.SKIP_DOCKER } }
+            steps {
+                script {
+                    def pom = readMavenPom file: 'pom.xml'
+                    echo "Building Docker image ${env.DOCKER_IMAGE_NAME}:${pom.version}"
+
+                    withCredentials([usernamePassword(credentialsId: 'nexus-creds', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
+                        sh """
+                            echo \$NEXUS_PASS | docker login ${NEXUS_DOCKER_URL} -u \$NEXUS_USER --password-stdin
+                            docker pull ${NEXUS_DOCKER_URL}/${DOCKER_IMAGE_NAME}:latest || true
+
+                            DOCKER_BUILDKIT=1 docker build \
+                                --cache-from ${NEXUS_DOCKER_URL}/${DOCKER_IMAGE_NAME}:latest \
+                                --build-arg VERSION=${pom.version} \
+                                -t ${DOCKER_IMAGE_NAME}:${pom.version} \
+                                -t ${DOCKER_IMAGE_NAME}:latest .
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Push Docker Image to Nexus') {
+            when { expression { !params.SKIP_DOCKER_DEPLOY } }
+            steps {
+                script {
+                    def pom = readMavenPom file: 'pom.xml'
+                    withCredentials([usernamePassword(credentialsId: 'nexus-creds', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
+                        sh """
+                            echo \$NEXUS_PASS | docker login ${NEXUS_DOCKER_URL} -u \$NEXUS_USER --password-stdin
+                            docker tag ${DOCKER_IMAGE_NAME}:${pom.version} ${NEXUS_DOCKER_URL}/${DOCKER_IMAGE_NAME}:${pom.version}
+                            docker tag ${DOCKER_IMAGE_NAME}:latest ${NEXUS_DOCKER_URL}/${DOCKER_IMAGE_NAME}:latest
+                            docker push ${NEXUS_DOCKER_URL}/${DOCKER_IMAGE_NAME}:${pom.version}
+                            docker push ${NEXUS_DOCKER_URL}/${DOCKER_IMAGE_NAME}:latest
+                            docker logout ${NEXUS_DOCKER_URL}
+                        """
                     }
                 }
             }
@@ -234,7 +284,7 @@ pipeline {
 
         stage('Cleanup') {
             steps {
-                withMaven(maven: 'Maven 4.0', jdk: 'JDK 24') {
+                withMaven(maven: 'Maven 4.0', jdk: 'JDK 25') {
                     sh 'mvn clean -B'
                 }
                 cleanWs(deleteDirs: true, notFailBuild: true)
