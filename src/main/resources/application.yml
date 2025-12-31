@@ -1,38 +1,31 @@
 spring:
   application:
     name: ${PROXY_APP_NAME:SingiAttend-Student_Proxy}
-
-eureka:
-  client:
-    enabled: ${EUREKA_DISCOVERY_ENABLE:false}
-    register-with-eureka: ${EUREKA_SHOULD_REGISTER:false}
-    fetch-registry: ${EUREKA_FETCH_REGISTRY:false}
-    service-url:
-      defaultZone: ${EUREKA_DEFAULT:http://localhost:8761/eureka/}
-  instance:
-    prefer-ip-address: false
-    hostname: ${EUREKA_HOSTNAME:localhost}
-    instance-id: ${spring.application.name}:${eureka.instance.hostname}:${server.port}
-    metadata-map:
-      support-team: MarkoDojkic
-      version: '@project.version@'
-    non-secure-port-enabled: false
-    secure-port-enabled: true
-    non-secure-port: ${server.port}
-    status-page-url: https://${eureka.instance.hostname}:${server.port}/actuator/info
-    health-check-url: https://${eureka.instance.hostname}:${server.port}/health
-    home-page-url: https://${eureka.instance.hostname}:${server.port}/
+  cloud:
+    kubernetes:
+      discovery:
+        enabled: true
+      client:
+        namespace: ${KUBERNETES_NAMESPACE:default}
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
   endpoint:
     health:
       enabled: true
+      probes:
+        enabled: true
     info:
       enabled: true
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      version: ${project.version}
 
 server:
   port: ${PROXY_PORT:62814}
@@ -49,4 +42,4 @@ server:
 
 feign:
   singiattend:
-    server_client: ${PROXY_FEIGN_SINGIATTEND_CLIENT:SINGIATTEND-SERVER}
+    server_client: ${PROXY_FEIGN_SINGIATTEND_CLIENT:singiattend-server}
