@@ -1,26 +1,26 @@
-// === Helper: Git + GPG setup (Jenkins-safe, idempotent) ===
+// === Helper: Git + GPG setup (Jenkins-safe) ===
 def setupGitConfig() {
     sh '''
         mkdir -p "$GPG_HOME"
         chmod 700 "$GPG_HOME"
 
-        # Skip re-import if already configured
-        if ! git config --global user.signingkey >/dev/null 2>&1; then
-            git config --global user.name "Марко Дојкић"
-            git config --global user.email "marko.dojkic@gmail.com"
-            git config --global user.signingkey ''' + env.GPG_KEY_ID + '''
-            git config --global commit.gpgsign true
-            git config --global tag.gpgsign true
-            git config --global gpg.program "$(which gpg)"
-            git config --global gpg.format openpgp
-        fi
+        # Git config with Unicode name and GPG signing
+        git config --global user.name "Марко Дојкић"
+        git config --global user.email "marko.dojkic@gmail.com"
+        git config --global user.signingkey ''' + env.GPG_KEY_ID + '''
+        git config --global commit.gpgsign true
+        git config --global tag.gpgsign true
 
-        # GPG configs (loopback for non-interactive Jenkins)
+        # Configure GPG program and format
+        git config --global gpg.program "$(which gpg)"
+        git config --global gpg.format openpgp
+
+        # Create gpg.conf with non-interactive settings
         echo "use-agent" > "$GPG_HOME/gpg.conf"
         echo "pinentry-mode loopback" >> "$GPG_HOME/gpg.conf"
         chmod 600 "$GPG_HOME/gpg.conf"
 
-        # Agent setup
+        # Create gpg-agent.conf for Jenkins non-interactive use
         echo 'export GPG_TTY=$(tty)' > "$GPG_HOME/gpg-agent.conf"
         chmod 600 "$GPG_HOME/gpg-agent.conf"
     '''
@@ -38,13 +38,13 @@ pipeline {
     }
 
     environment {
-        PATH = "/usr/local/MacGPG2/bin:/usr/local/bin:/usr/bin:${env.PATH}"
         DOCKER_IMAGE_NAME = "singiattend-mongo"
-        NEXUS_DOCKER_URL = "host.lima.internal:5001"
+        NEXUS_DOCKER_URL = "markodojkic.local:5001"
         VERSION_FILE = "VERSION"
         DOCKER_BUILDKIT = '1'
         GPG_KEY_ID = "F7CC88ED5C36404B4BA4B1FE039F7DC7EFE5D537"
         GPG_HOME = "${WORKSPACE}/.gnupg"
+        PATH = "/usr/local/MacGPG2/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:${env.PATH}"
     }
 
     parameters {
@@ -56,22 +56,55 @@ pipeline {
 
     stages {
 
-        stage('Checkout and Setup') {
+        stage('Check Skip Options') {
+            when { expression { params.SKIP_BUILD } }
             steps {
-                checkout scm
-                script {
-                    setupGitConfig()
+                echo "Build skipped as requested."
+                script { currentBuild.result = 'SUCCESS' }
+            }
+        }
 
-                    // Ensure VERSION file exists
-                    if (!fileExists(env.VERSION_FILE)) {
-                        writeFile file: env.VERSION_FILE, text: '1.0.0-SNAPSHOT'
+        stage('Setup GPG') {
+            steps {
+                script {
+                    withCredentials([file(credentialsId: 'gpg-secret-key', variable: 'GPG_KEY_FILE')]) {
                         sh '''
-                            git add VERSION
-                            git commit -S -m "chore: initialize version file with 1.0.0-SNAPSHOT" || echo "No changes"
-                            git push origin HEAD:${BRANCH_NAME} || true
+                            mkdir -p "$GPG_HOME"
+                            chmod 700 "$GPG_HOME"
+
+                            if [ ! -f "$GPG_HOME/pubring.kbx" ] || ! gpg --homedir "$GPG_HOME" --list-keys "${env.GPG_KEY_ID}" &>/dev/null; then
+                                echo "Importing GPG key..."
+                                gpg --batch --homedir "$GPG_HOME" --import "$GPG_KEY_FILE"
+                                echo "''' + env.GPG_KEY_ID + ''':6:" | gpg --homedir "$GPG_HOME" --import-ownertrust
+                            else
+                                echo "GPG key ${env.GPG_KEY_ID} already exists, skipping import"
+                            fi
+
+                            echo "=== GPG Keys ==="
+                            gpg --homedir "$GPG_HOME" --list-secret-keys --keyid-format LONG
+                        '''
+                        setupGitConfig()
+
+                        sh '''
+                            echo "=== Git GPG Config ==="
+                            git config --global --list | grep -E "user|gpg|sign" || true
                         '''
                     }
                 }
+            }
+        }
+
+        stage('Checkout & Setup Git') {
+            steps {
+                checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: "refs/heads/${env.BRANCH_NAME}"]],
+                        userRemoteConfigs: [[
+                                                    url: 'https://github.com/MarkoDojkic/SingiAttend_Multibranch_Jenkins.git',
+                                                    credentialsId: 'github-creds'
+                                            ]]
+                ])
+                sh "git checkout -B ${env.BRANCH_NAME} origin/${env.BRANCH_NAME} || true"
             }
         }
 
@@ -104,33 +137,6 @@ pipeline {
                         echo "No version change needed (current: ${currentVersion})"
                         env.VERSION = currentVersion
                     }
-                }
-            }
-        }
-
-        stage('Setup GPG') {
-            steps {
-                script {
-                    withCredentials([file(credentialsId: 'gpg-secret-key', variable: 'GPG_KEY_FILE')]) {
-                        sh '''
-                            mkdir -p "$GPG_HOME"
-                            chmod 700 "$GPG_HOME"
-
-                            if [ ! -f "$GPG_HOME/pubring.kbx" ]; then
-                                echo "Importing GPG key..."
-                                gpg --batch --homedir "$GPG_HOME" --import "$GPG_KEY_FILE"
-                                echo "''' + env.GPG_KEY_ID + ''':6:" | gpg --homedir "$GPG_HOME" --import-ownertrust
-                            fi
-
-                            echo "=== GPG Keys ==="
-                            gpg --homedir "$GPG_HOME" --list-secret-keys --keyid-format LONG
-                        '''
-                    }
-
-                    sh '''
-                        echo "=== Git GPG Config ==="
-                        git config --global --list | grep -E "user|gpg|sign" || true
-                    '''
                 }
             }
         }
