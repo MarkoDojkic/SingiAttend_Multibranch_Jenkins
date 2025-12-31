@@ -3,45 +3,32 @@ spring:
     name: ${APP_NAME:SingiAttend-Server}
   main:
     allow-circular-references: true
-
-eureka:
-  client:
-    enabled: ${EUREKA_DISCOVERY_ENABLE:false}
-    register-with-eureka: ${EUREKA_SHOULD_REGISTER:false}
-    fetch-registry: ${EUREKA_FETCH_REGISTRY:false}
-    service-url:
-      defaultZone: ${EUREKA_DEFAULT:http://localhost:8761/eureka/}
-    tls:
-      enabled: true
-      trust-store: ${EUREKA_TRUST_STORE:file:/usr/lib/jvm/default-jvm/lib/security/cacerts}
-      trust-store-password: ${EUREKA_TRUST_STORE_PASSWORD:changeit}
-  instance:
-    prefer-ip-address: false
-    hostname: ${EUREKA_HOSTNAME:localhost}
-    instance-id: ${spring.application.name}:${eureka.instance.hostname}:${server.port}
-    metadata-map:
-      support-team: MarkoDojkic
-      version: @project.version@
-    non-secure-port-enabled: false
-    secure-port-enabled: true
-    non-secure-port: ${server.port}
-    status-page-url: https://${eureka.instance.hostname}:${server.port}/actuator/info
-    health-check-url: https://${eureka.instance.hostname}:${server.port}/health
-    home-page-url: https://${eureka.instance.hostname}:${server.port}/
+    cloud-platform: kubernetes
+  cloud:
+    kubernetes:
+      discovery:
+        enabled: true
+      client:
+        namespace: ${KUBERNETES_NAMESPACE:default}
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
   endpoint:
     health:
       enabled: true
+      probes:
+        enabled: true
     info:
       enabled: true
-
-tenants: ${TENANTS}
-mongoHost: ${MONGO_HOST:localhost:27017}
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      version: ${project.version}
 
 server:
   port: ${PORT:62812}
@@ -55,3 +42,6 @@ server:
     enabled: true
     enabled-protocols: TLSv1.2,TLSv1.3
     protocol: TLS
+
+tenants: ${TENANTS}
+mongoHost: ${MONGO_HOST:localhost:27017}
