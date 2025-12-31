@@ -1,0 +1,18 @@
+127.0.0.1 localhost
+
+# The following lines are desirable for IPv6 capable hosts
+::1 ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+ff02::3 ip6-allhosts
+127.0.0.1 colima
+127.0.0.1 markodojkic.local
+192.168.0.68 markodojkic.local
+192.168.0.68 jenkins.markodojkic.local
+192.168.0.68 nexus.markodojkic.local
+192.168.0.68 sonar.markodojkic.local
+192.168.0.68 prometheus.markodojkic.local
+192.168.0.68 grafana.markodojkic.local
+192.168.5.2 host.lima.internal
