@@ -21,7 +21,7 @@
     }
 
     function showDetails($id,$xml){
-        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/getSubject/" . $id);
+        $server_request = curl_init(SERVER_URL . "/api/getSubject/" . $id);
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -38,7 +38,7 @@
 
         $assistants = "";
 
-        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/getAllAssistants");
+        $server_request = curl_init(SERVER_URL . "/api/getAllAssistants");
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -103,7 +103,7 @@
     }
 
     function startNewSubjectYear($id,$xml){
-        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/startNewSubjectYear/" . $id);
+        $server_request = curl_init(SERVER_URL . "/api/startNewSubjectYear/" . $id);
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, false);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -124,7 +124,7 @@
     }
 
     function endCurrentSubjectYear($id,$xml){
-        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/endCurrentSubjectYear/" . $id);
+        $server_request = curl_init(SERVER_URL . "/api/endCurrentSubjectYear/" . $id);
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, false);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -168,7 +168,7 @@
         // else 
             // echo "<i style='color:red;font-size:14px;'> - " . $xml->errors->edit_wrong_sN1[0] . "</i>\";
         if($post != null){
-            $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/update/subject/" . $id);
+            $server_request = curl_init(SERVER_URL . "/api/update/subject/" . $id);
 
             curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($server_request, CURLOPT_CUSTOMREQUEST, "PATCH");
@@ -195,7 +195,7 @@
         $alert = "{$xml->assistantPage->viewStudentsText[0]}";
         $localization = $_SESSION["language"] === "english" ? "titleEnglish" : "title";
         
-        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/allStudentBySubjectId/" . $id);
+        $server_request = curl_init(SERVER_URL . "/api/allStudentBySubjectId/" . $id);
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -228,7 +228,7 @@
     
     function viewLectures($id,$xml){
 
-        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/subjectIsInactiveById/" . $id);
+        $server_request = curl_init(SERVER_URL . "/api/subjectIsInactiveById/" . $id);
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -254,7 +254,7 @@
 
         $lectures = "<option value=''>-</option>";
 
-        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/getAllLectures/" . $id);
+        $server_request = curl_init(SERVER_URL . "/api/getAllLectures/" . $id);
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -338,7 +338,7 @@
 
     function startNewLecture($id,$xml){
 
-        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/getLastLecture/" . $id);
+        $server_request = curl_init(SERVER_URL . "/api/getLastLecture/" . $id);
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -369,7 +369,7 @@
             }
         }
 
-        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/insert/lecture/" . $id . "/" . $_POST['start_time'] . "/" . $_POST['end_time']);
+        $server_request = curl_init(SERVER_URL . "/api/insert/lecture/" . $id . "/" . $_POST['start_time'] . "/" . $_POST['end_time']);
             
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, false);
         curl_setopt($server_request, CURLOPT_CUSTOMREQUEST, "PUT");
@@ -392,7 +392,7 @@
 
     function viewExercises($id,$xml){
 
-        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/subjectIsInactiveById/" . $id);
+        $server_request = curl_init(SERVER_URL . "/api/subjectIsInactiveById/" . $id);
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -418,7 +418,7 @@
 
         $exercises = "<option value=''>-</option>";
 
-        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/getAllExercises/" . $id);
+        $server_request = curl_init(SERVER_URL . "/api/getAllExercises/" . $id);
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -501,7 +501,7 @@
 
     function startNewExercise($id,$xml){
 
-        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/getLastExercise/" . $id);
+        $server_request = curl_init(SERVER_URL . "/api/getLastExercise/" . $id);
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -529,7 +529,7 @@
             }
         }
 
-        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/insert/exercise/" . $id . "/" . $_POST['start_time'] . "/" . $_POST['end_time']);
+        $server_request = curl_init(SERVER_URL . "/api/insert/exercise/" . $id . "/" . $_POST['start_time'] . "/" . $_POST['end_time']);
             
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, false);
         curl_setopt($server_request, CURLOPT_CUSTOMREQUEST, "PUT");

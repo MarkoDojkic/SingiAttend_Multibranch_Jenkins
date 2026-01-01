@@ -4,7 +4,7 @@
 
     if($_SESSION['isAdminLoggedIn']){
         foreach(["SingidunumBG", "SingidunumNS", "SingidunumNIS"] as $proxyIdentifier){
-            $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/csrfLogout");
+            $server_request = curl_init(SERVER_URL . "/api/csrfLogout");
 
             curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($server_request, CURLOPT_HEADER, true);
@@ -16,7 +16,7 @@
             curl_close($server_request);
         }
     } else {
-        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/csrfLogout");
+        $server_request = curl_init(SERVER_URL . "/api/csrfLogout");
 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HEADER, true);

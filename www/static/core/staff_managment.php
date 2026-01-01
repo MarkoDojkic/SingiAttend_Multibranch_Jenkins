@@ -16,7 +16,7 @@
     function switchRole($id,$xml){
         $newRole = $_POST["oldRole_$id"] === "professor" ? "assistant" : "professor";
 
-        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/checkIfStaffHasSubjectAssigned/" . $id);
+        $server_request = curl_init(SERVER_URL . "/api/checkIfStaffHasSubjectAssigned/" . $id);
      
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -37,7 +37,7 @@
             showErrorAlert($xml->errors->switchRoleError1[0] . " " . mb_strtolower($staffMember) . " " . $xml->errors->switchRoleError2[0]);
         }
         else {
-            $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/update/staff/" . $id);
+            $server_request = curl_init(SERVER_URL . "/api/update/staff/" . $id);
                 
             curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($server_request, CURLOPT_CUSTOMREQUEST, "PATCH");
@@ -66,7 +66,7 @@
         $password_pattern = "/^(?=.*[a-z])(?=.*\d)[a-z\d]{8,}$/";
 
         if(preg_match_all($nameSurname_pattern, $_POST["newNS_$id"])){
-            $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/update/staff/" . $id);
+            $server_request = curl_init(SERVER_URL . "/api/update/staff/" . $id);
 
             curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($server_request, CURLOPT_CUSTOMREQUEST, "PATCH");
@@ -87,7 +87,7 @@
         }
 
         if(!empty($_POST["newUE_$id"])){
-            $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/update/staff/" . $id);
+            $server_request = curl_init(SERVER_URL . "/api/update/staff/" . $id);
                 
             curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($server_request, CURLOPT_CUSTOMREQUEST, "PATCH");
@@ -108,7 +108,7 @@
         }
 
         if(preg_match_all($password_pattern, $_POST["newPASS_$id"])){
-            $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/update/staff/" . $id);
+            $server_request = curl_init(SERVER_URL . "/api/update/staff/" . $id);
                 
             curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($server_request, CURLOPT_CUSTOMREQUEST, "PATCH");
@@ -146,7 +146,7 @@
 
     function deleteStaffMember($id,$xml){
 
-        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/delete/staff/" . $id . "/" . ($_POST["oldRole_$id"] === "professor" ? "0" : "1"));
+        $server_request = curl_init(SERVER_URL . "/api/delete/staff/" . $id . "/" . ($_POST["oldRole_$id"] === "professor" ? "0" : "1"));
 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_CUSTOMREQUEST, "DELETE");
