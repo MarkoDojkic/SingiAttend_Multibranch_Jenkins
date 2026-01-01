@@ -1,9 +1,38 @@
----
 apiVersion: v1
 kind: Namespace
 metadata:
   name: nexus
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: singiattend-sa
+  namespace: nexus
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: singiattend-role
+  namespace: nexus
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "endpoints"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: singiattend-rb
+  namespace: nexus
+subjects:
+  - kind: ServiceAccount
+    name: singiattend-sa
+roleRef:
+  kind: Role
+  name: singiattend-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Persistent Volume for MongoDB
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -11,14 +40,15 @@ metadata:
   namespace: nexus
 spec:
   capacity:
-    storage: 10Gi  # Size of the persistent storage
+    storage: 10Gi
   volumeMode: Filesystem
   accessModes:
-    - ReadWriteOnce  # Only one pod can mount the volume for writing
-  storageClassName: standard  # Make sure this matches the PVC storageClassName
-  hostPath:  # Local storage example (change this for cloud environments)
-    path: /mnt/data/mongodb  # Directory on the node to mount as the volume
+    - ReadWriteOnce
+  storageClassName: standard
+  hostPath:
+    path: /mnt/data/mongodb
 ---
+# PVC for MongoDB
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -26,19 +56,20 @@ metadata:
   namespace: nexus
 spec:
   accessModes:
-    - ReadWriteOnce  # Ensure it matches the PV access mode
+    - ReadWriteOnce
   resources:
     requests:
-      storage: 10Gi  # Requested size of the PVC (must be equal or smaller than the PV size)
-  storageClassName: standard  # Ensure this matches the PV's storage class
+      storage: 10Gi
+  storageClassName: standard
 ---
+# MongoDB Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: singiattend-mongo
   namespace: nexus
 spec:
-  replicas: 1  # Number of pods for MongoDB (should be > 0 to run)
+  replicas: 1
   selector:
     matchLabels:
       app: singiattend-mongo
@@ -49,101 +80,62 @@ spec:
     spec:
       containers:
         - name: singiattend-mongo
-          image: markodojkic.local:5001/singiattend-mongo:latest  # Use your MongoDB image here
+          image: markodojkic.local:5001/singiattend-mongo:latest
           ports:
             - containerPort: 27017
-              name: singiattend-db
-              protocol: TCP
           volumeMounts:
-            - mountPath: /data/db  # MongoDB's data directory
+            - mountPath: /data/db
               name: mongodb-storage
-      imagePullSecrets:
-        - name: nexus-credentials
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "2"
+            limits:
+              memory: "4Gi"
+              cpu: "4"
       volumes:
         - name: mongodb-storage
           persistentVolumeClaim:
-            claimName: mongodb-pvc  # The PVC to bind to
+            claimName: mongodb-pvc
+      automountServiceAccountToken: false
+      imagePullSecrets:
+        - name: nexus-credentials
 ---
+# MongoDB Service
 apiVersion: v1
 kind: Service
 metadata:
-  name: singiattend-mongo-service
+  name: singiattend-mongo
   namespace: nexus
 spec:
   ports:
-    - name: singiattend-db
-      port: 62810  # External port for accessing MongoDB
-      protocol: TCP
-      targetPort: 27017  # MongoDB's internal port
+    - name: mongo
+      port: 27017
+      targetPort: 27017
   selector:
     app: singiattend-mongo
-  sessionAffinity: None
   type: ClusterIP
 ---
-apiVersion: apps/v1
-kind: Deployment
+# ConfigMaps
+apiVersion: v1
+kind: ConfigMap
 metadata:
-  name: singiattend
+  name: singiattend-fe-cm
   namespace: nexus
-spec:
-  replicas: 1  # Ensure this is > 0 to start the app
-  selector:
-    matchLabels:
-      app: singiattend
-  template:
-    metadata:
-      labels:
-        app: singiattend
-    spec:
-      containers:
-        - name: singiattend
-          image: markodojkic.local:5001/singiattend-appstack:latest
-          ports:
-            - containerPort: 443
-              name: singiattend-fe
-              protocol: TCP
-            - containerPort: 62811
-              name: singiattend-be
-              protocol: TCP
-            - containerPort: 62814
-              name: singiattend-sp
-              protocol: TCP
-            - containerPort: 8761
-              name: eureka-server
-              protocol: TCP
-          envFrom:
-            - configMapRef:
-                name: singiattend-cm
-          env:
-            - name: MONGO_HOST
-              value: "singiattend-mongo-service:62810"  # Ensure this points to the MongoDB service
-          volumeMounts:
-            - mountPath: /app/config
-              name: config-volume
-      imagePullSecrets:
-        - name: nexus-credentials
-      volumes:
-        - name: config-volume
-          configMap:
-            name: singiattend-cm
+data:
+  BE_SERVICE_NAME: singiattend-server.nexus.svc.cluster.local
+  BE_PORT: "62811"
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: singiattend-cm
+  name: singiattend-be-cm
   namespace: nexus
 data:
   APP_NAME: singiattend-server
-  EUREKA_DEFAULT: http://singiattend-service:8761/eureka
-  EUREKA_DISCOVERY_ENABLE: "true"
-  EUREKA_FETCH_REGISTRY: "true"
-  EUREKA_HOSTNAME: singiattend-service.nexus.svc.cluster.local
-  EUREKA_SHOULD_REGISTER: "true"
-  MONGO_HOST: singiattend-mongo-service:62810  # This points to the MongoDB service
   PORT: "62811"
-  PROXY_APP_NAME: singiattend-student-proxy
-  PROXY_FEIGN_SINGIATTEND_CLIENT: singiattend-server
-  PROXY_PORT: "62814"
+  MONGO_HOST: singiattend-mongo.nexus.svc.cluster.local
+  MONGO_PORT: "27017"
   TENANTS: |
     [
       {"tenantId":"SingidunumBG","db":"SingiAttend_BG"},
@@ -152,50 +144,329 @@ data:
     ]
 ---
 apiVersion: v1
-kind: Service
+kind: ConfigMap
 metadata:
-  name: singiattend-service
+  name: singiattend-sp-cm
   namespace: nexus
-spec:
-  ports:
-    - name: singiattend-fe
-      port: 62812
-      protocol: TCP
-      targetPort: 443
-    - name: singiattend-be
-      port: 62811
-      protocol: TCP
-      targetPort: 62811
-    - name: singiattend-sp
-      port: 62814
-      protocol: TCP
-      targetPort: 62814
-    - name: eureka-server
-      port: 8761
-      protocol: TCP
-      targetPort: 8761
-  selector:
-    app: singiattend
-  sessionAffinity: None
-  type: ClusterIP
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: nexus-credentials
-  namespace: nexus
-type: kubernetes.io/dockerconfigjson
 data:
-  .dockerconfigjson: eyJhdXRocyI6eyJtYXJrb2RvamtpYy5sb2NhbDo1MDAxIjp7ImF1dGgiOiJZV1J0YVc0Nk1UTW9Xa3RjY3lGc055bHcifX19
+  PROXY_APP_NAME: singiattend-student-proxy
+  KUBERNETES_NAMESPACE: nexus
+  PROXY_PORT: "62814"
+  PROXY_FEIGN_SINGIATTEND_CLIENT: singiattend-server
 ---
+# Secrets
 apiVersion: v1
 kind: Secret
 metadata:
-  name: singiattend-ssl-credentials
+  name: fe-ssl-secret
   namespace: nexus
 type: Opaque
 data:
-  proxy_key-password: c2luZ2lhdHRlbmQtc3R1ZGVudF9wcm94eTIwMjU=
-  proxy_keystore-password: c2luZ2lhdHRlbmQtc3R1ZGVudF9wcm94eTIwMjU=
-  server_key-password: c2luZ2lhdHRlbmQtc3R1ZGVudF9zZXJ2ZXIyMDI1
-  server_keystore-password: c2luZ2lhdHRlbmQtc3R1ZGVudF9zZXJ2ZXIyMDI1
+  SERVER_SSL_KEY_PASSWORD: c2luZ2lhdHRlbmQtc3R1ZGVudF9zZXJ2ZXIyMDI1
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: be-ssl-secret
+  namespace: nexus
+type: Opaque
+data:
+  SERVER_SSL_KEY_PASSWORD: c2luZ2lhdHRlbmQtc3R1ZGVudF9zZXJ2ZXIyMDI1
+  SERVER_SSL_KEY_STORE_PASSWORD: c2luZ2lhdHRlbmQtc3R1ZGVudF9zZXJ2ZXIyMDI1
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: sp-ssl-secret
+  namespace: nexus
+type: Opaque
+data:
+  PROXY_SERVER_SSL_KEY_PASSWORD: c2luZ2lhdHRlbmQtc3R1ZGVudF9wcm94eTIwMjU=
+  PROXY_SERVER_SSL_KEY_STORE_PASSWORD: c2luZ2lhdHRlbmQtc3R1ZGVudF9wcm94eTIwMjU=
+---
+# FE Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: singiattend-fe
+  namespace: nexus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: singiattend-fe
+  template:
+    metadata:
+      labels:
+        app: singiattend-fe
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9113"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: singiattend-appstack
+          image: markodojkic.local:5001/singiattend-appstack:latest
+          ports:
+            - containerPort: 443
+              name: fe
+          envFrom:
+            - configMapRef:
+                name: singiattend-fe-cm
+            - secretRef:
+                name: fe-ssl-secret
+          readinessProbe:
+            tcpSocket:
+              port: 443
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          livenessProbe:
+            tcpSocket:
+              port: 443
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+              ephemeral-storage: "1Gi"
+            limits:
+              memory: "2Gi"
+              cpu: "1"
+              ephemeral-storage: "1Gi"
+        - name: php-metrics
+          image: markodojkic.local:5001/php-metrics:latest
+          ports:
+            - containerPort: 9113
+              name: metrics
+          env:
+            - name: TARGET_HOST
+              value: singiattend-fe.nexus.svc.cluster.local
+            - name: TARGET_PORT
+              value: "443"
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+              ephemeral-storage: "1Gi"
+            limits:
+              memory: "2Gi"
+              cpu: "1"
+              ephemeral-storage: "1Gi"
+      automountServiceAccountToken: false
+      imagePullSecrets:
+        - name: nexus-credentials
+---
+# FE Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: singiattend-fe
+  namespace: nexus
+spec:
+  ports:
+    - port: 443
+      targetPort: 443
+  selector:
+    app: singiattend-fe
+  type: ClusterIP
+---
+# BE Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: singiattend-be
+  namespace: nexus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: singiattend-be
+  template:
+    metadata:
+      labels:
+        app: singiattend-be
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "62811"
+        prometheus.io/path: "/actuator/health/prometheus"
+    spec:
+      containers:
+        - name: singiattend-server
+          image: markodojkic.local:5001/singiattend-server:latest
+          ports:
+            - containerPort: 62811
+              name: be
+          envFrom:
+            - configMapRef:
+                name: singiattend-be-cm
+            - secretRef:
+                name: be-ssl-secret
+          readinessProbe:
+            httpGet:
+              scheme: HTTPS
+              path: /actuator/health/readiness
+              port: 62811
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              scheme: HTTPS
+              path: /actuator/health/liveness
+              port: 62811
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "1"
+              ephemeral-storage: "1Gi"
+            limits:
+              memory: "4Gi"
+              cpu: "4"
+              ephemeral-storage: "4Gi"
+      serviceAccountName: singiattend-sa
+      automountServiceAccountToken: true
+      imagePullSecrets:
+        - name: nexus-credentials
+---
+# BE Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: singiattend-server
+  namespace: nexus
+spec:
+  ports:
+    - port: 62811
+      targetPort: 62811
+  selector:
+    app: singiattend-be
+  type: ClusterIP
+---
+# Student Proxy Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: singiattend-sp
+  namespace: nexus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: singiattend-sp
+  template:
+    metadata:
+      labels:
+        app: singiattend-sp
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "62814"
+        prometheus.io/path: "/actuator/health/prometheus"
+    spec:
+      containers:
+        - name: singiattend-student-proxy
+          image: markodojkic.local:5001/singiattend-student-proxy:latest
+          ports:
+            - containerPort: 62814
+              name: sp
+          envFrom:
+            - configMapRef:
+                name: singiattend-sp-cm
+            - secretRef:
+                name: sp-ssl-secret
+          readinessProbe:
+            httpGet:
+              scheme: HTTPS
+              path: /actuator/health/readiness
+              port: 62814
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              scheme: HTTPS
+              path: /actuator/health/liveness
+              port: 62814
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "1"
+              ephemeral-storage: "1Gi"
+            limits:
+              memory: "4Gi"
+              cpu: "4"
+              ephemeral-storage: "4Gi"
+      serviceAccountName: singiattend-sa
+      automountServiceAccountToken: true
+      imagePullSecrets:
+        - name: nexus-credentials
+---
+# Student Proxy Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: singiattend-sp
+  namespace: nexus
+spec:
+  ports:
+    - port: 62814
+      targetPort: 62814
+  selector:
+    app: singiattend-sp
+  type: ClusterIP
+---
+# Prometheus ServiceMonitor for FE metrics
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: php-fe
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: singiattend-fe
+  namespaceSelector:
+    matchNames:
+      - nexus
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 15s
+---
+#Ingress for teacher and student
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: singiattend
+  namespace: nexus
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - singiattend.k8s.markodojkic.local
+      secretName: ingress-k8s-tls
+  rules:
+    - host: singiattend.k8s.markodojkic.local
+      http:
+        paths:
+          - path: /teacher
+            pathType: Prefix
+            backend:
+              service:
+                name: singiattend-fe
+                port:
+                  number: 443
+
+          - path: /student
+            pathType: Prefix
+            backend:
+              service:
+                name: singiattend-sp
+                port:
+                  number: 62814

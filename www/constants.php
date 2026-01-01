@@ -6,7 +6,10 @@
     define("DIR_MISCELLANEOUS", DIR_STATIC . "/miscellaneous");
     define("DIR_TEMPLATES", DIR_STATIC . "/templates");
     define("SSL_CERTIFICATE_PATH", DIR_ROOT . DIR_MISCELLANEOUS . "/fullchain_ssl.pem");
-    define("SERVER_URL", "localhost:");
-    define("SERVER_PORT", "62811"); #Proxy app port
+
+    $beHost = getenv("BE_SERVICE_NAME");
+    $bePort = getenv('BE_PORT');
+
+    define("SERVER_URL", sprintf('https://%s:%s', $beHost, $bePort));
     define("SERVER_USERNAME", "singiattend-admin");
-    define("SERVER_PASSWORD", "singiattend-server2021");
+    define("SERVER_PASSWORD", getenv('SERVER_SSL_KEY_PASSWORD'));

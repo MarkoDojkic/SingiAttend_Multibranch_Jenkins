@@ -9,7 +9,7 @@
     $attendancesData = "";
     $datesData = "[";
 
-    $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/totalStudents/" . $_POST["subjectSelection"]);
+    $server_request = curl_init(SERVER_URL . "/api/totalStudents/" . $_POST["subjectSelection"]);
                 
     curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -187,7 +187,7 @@
         $notAttended = "";
         $datesData = "[";
         
-        $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/getAll" . $attendanceFor . "/" . $_POST["subjectSelection"]);
+        $server_request = curl_init(SERVER_URL . "/api/getAll" . $attendanceFor . "/" . $_POST["subjectSelection"]);
 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(

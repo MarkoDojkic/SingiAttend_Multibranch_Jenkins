@@ -19,12 +19,6 @@ pipeline {
     }
 
     parameters {
-        string(name: 'BE_VERSION', defaultValue: '', description: 'Backend JAR version (from BE build)')
-        string(name: 'BE_JAR_SUFFIX', defaultValue: '', description: 'Backend JAR suffix')
-        string(name: 'EUREKA_VERSION', defaultValue: '', description: 'Eureka JAR version (from Eureka build)')
-        string(name: 'EUREKA_JAR_SUFFIX', defaultValue: '', description: 'Eureka JAR suffix')
-        string(name: 'STUDENT_PROXY_VERSION', defaultValue: '', description: 'Student Proxy JAR version (from Student Proxy build)')
-        string(name: 'STUDENT_PROXY_JAR_SUFFIX', defaultValue: '', description: 'Student Proxy JAR suffix')
         booleanParam(name: 'SKIP_BUILD', defaultValue: false, description: 'Skip Docker build')
         booleanParam(name: 'SKIP_DEPLOY', defaultValue: false, description: 'Skip push to Nexus')
         booleanParam(name: 'RUN_SONAR', defaultValue: false, description: 'Run SonarQube analysis')
@@ -91,7 +85,7 @@ pipeline {
             steps {
                 script {
                     def versionTag = env.VERSION ?: readFile(env.VERSION_FILE).trim()
-                    echo "Building Docker image ${env.DOCKER_IMAGE_NAME}:${versionTag} with BE=${params.BE_JAR_SUFFIX}, Eureka=${params.EUREKA_JAR_SUFFIX}, Student Proxy=${params.STUDENT_PROXY_JAR_SUFFIX}"
+                    echo "Building Docker image ${env.DOCKER_IMAGE_NAME}:${versionTag}"
 
                     withCredentials([usernamePassword(credentialsId: 'nexus-creds', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
                         sh """
@@ -100,15 +94,6 @@ pipeline {
 
                             DOCKER_BUILDKIT=1 docker build \
                                 --cache-from ${NEXUS_DOCKER_URL}/${DOCKER_IMAGE_NAME}:latest \
-                                --build-arg NEXUS_URL=https://markodojkic.local:8444 \
-                                --build-arg NEXUS_USER=\$NEXUS_USER \
-                                --build-arg NEXUS_PASS=\$NEXUS_PASS \
-                                --build-arg BE_JAR_VERSION=${params.BE_VERSION} \
-                                --build-arg BE_JAR_SUFFIX=${params.BE_JAR_SUFFIX} \
-                                --build-arg EUREKA_JAR_VERSION=${params.EUREKA_VERSION} \
-                                --build-arg EUREKA_JAR_SUFFIX=${params.EUREKA_JAR_SUFFIX} \
-                                --build-arg STUDENT_PROXY_JAR_VERSION=${params.STUDENT_PROXY_VERSION} \
-                                --build-arg STUDENT_PROXY_JAR_SUFFIX=${params.STUDENT_PROXY_JAR_SUFFIX} \
                                 -t ${DOCKER_IMAGE_NAME}:${versionTag} \
                                 -t ${DOCKER_IMAGE_NAME}:latest .
                         """
@@ -149,7 +134,7 @@ pipeline {
                         sonar-scanner \
                             -Dsonar.projectKey=SingiAttend-Server-Jenkins \
                             -Dsonar.sources=www \
-                            -Dsonar.host.url=https://markodojkic.local:8445 \
+                            -Dsonar.host.url=https://sonar.markodojkic.local \
                             -Dsonar.login=${SONAR_PASS}
                     """
                 }

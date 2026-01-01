@@ -6,7 +6,7 @@
 
     $xml = @simplexml_load_file(DIR_ROOT . DIR_LANGUAGES . "/{$_SESSION["language"]}.xml")  or die(file_get_contents(DIR_ROOT . "/error404.html"));
 
-    $server_request = curl_init(SERVER_URL . SERVER_PORT . "/api/getSubject/" . $_POST['subjectId']);
+    $server_request = curl_init(SERVER_URL . "/api/getSubject/" . $_POST['subjectId']);
                 
     curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
