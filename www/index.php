@@ -73,7 +73,7 @@
             }   
     
             echo initiateFooter($xml);
-
+        ?>
     </body>
 </html>
 

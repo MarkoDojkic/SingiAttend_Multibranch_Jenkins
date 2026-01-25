@@ -49,7 +49,7 @@ COPY ssl/* /etc/nginx/ssl/
 COPY --chown=nginx:www-data www /var/www/html/
 
 # Expose FE port
-EXPOSE 443
+EXPOSE 80
 
 # Start supervisord
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
