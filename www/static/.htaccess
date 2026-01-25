@@ -4,5 +4,5 @@ RewriteEngine On
 # Forbid direct access to /static
 RewriteCond %{REQUEST_URI} ^/static/ [NC]
 RewriteCond %{HTTP_REFERER} ^$ [OR]   # No referer
-RewriteCond %{HTTP_REFERER} !^https:// %{HTTP_HOST} [NC]  # Optional: allow same host referer
+RewriteCond %{HTTP_REFERER} !^https?://%{HTTP_HOST} [NC]  # Optional: allow same host referer
 RewriteRule ^.*$ - [F,L]  # Send 403 Forbidden

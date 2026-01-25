@@ -208,7 +208,7 @@ spec:
         - name: singiattend-appstack
           image: markodojkic.local:5001/singiattend-appstack:latest
           ports:
-            - containerPort: 443
+            - containerPort: 80
               name: fe
           envFrom:
             - configMapRef:
@@ -217,12 +217,12 @@ spec:
                 name: fe-ssl-secret
           readinessProbe:
             tcpSocket:
-              port: 443
+              port: 80
             initialDelaySeconds: 10
             periodSeconds: 15
           livenessProbe:
             tcpSocket:
-              port: 443
+              port: 80
             initialDelaySeconds: 30
             periodSeconds: 20
           resources:
@@ -243,7 +243,7 @@ spec:
             - name: TARGET_HOST
               value: singiattend-fe.nexus.svc.cluster.local
             - name: TARGET_PORT
-              value: "443"
+              value: "80"
           resources:
             requests:
               memory: "1Gi"
@@ -265,8 +265,8 @@ metadata:
   namespace: nexus
 spec:
   ports:
-    - port: 443
-      targetPort: 443
+    - port: 80
+      targetPort: 80
   selector:
     app: singiattend-fe
   type: ClusterIP
@@ -435,16 +435,14 @@ spec:
       path: /metrics
       interval: 15s
 ---
-#Ingress for teacher and student
+#Ingress for teacher
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: singiattend
+  name: singiattend-teacher
   namespace: nexus
   annotations:
-    nginx.ingress.kubernetes.io/backend-protocol: HTTPS
-    nginx.ingress.kubernetes.io/rewrite-target: /
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
 spec:
   ingressClassName: nginx
   tls:
@@ -461,8 +459,27 @@ spec:
               service:
                 name: singiattend-fe
                 port:
-                  number: 443
-
+                  number: 80
+---
+#Ingress for student
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: singiattend-student
+  namespace: nexus
+  annotations:
+    nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - singiattend.k8s.markodojkic.local
+      secretName: ingress-k8s-tls
+  rules:
+    - host: singiattend.k8s.markodojkic.local
+      http:
+        paths:
           - path: /student
             pathType: Prefix
             backend:
