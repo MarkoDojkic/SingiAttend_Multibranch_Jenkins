@@ -137,7 +137,7 @@
         
         $tBody = "";
 
-        $server_request = curl_init(SERVER_URL . "/api/getAllSubjectsByProfessor/" . $_SESSION['loggedInId']);
+        $server_request = curl_init(SERVER_URL . "/api/v1/getAllSubjectsByProfessor/" . $_SESSION['loggedInId']);
         
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -191,7 +191,7 @@
         $assistants = "<option value=''>-</option>";
         $studies = "";
 
-        $server_request = curl_init(SERVER_URL . "/api/getAllAssistants");
+        $server_request = curl_init(SERVER_URL . "/api/v1/getAllAssistants");
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -213,7 +213,7 @@
             ";
         }
 
-        $server_request = curl_init(SERVER_URL . "/api/getAllStudies");
+        $server_request = curl_init(SERVER_URL . "/api/v1/getAllStudies");
                         
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -271,7 +271,7 @@
 
         $subjects = "<option value=''>-</option>";
 
-        $server_request = curl_init(SERVER_URL . "/api/getAllSubjectsByProfessor/" . $_SESSION['loggedInId']);
+        $server_request = curl_init(SERVER_URL . "/api/v1/getAllSubjectsByProfessor/" . $_SESSION['loggedInId']);
         
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -304,7 +304,7 @@
         
         $tBody = "";
 
-        $server_request = curl_init(SERVER_URL . "/api/getAllSubjectsByAssistant/" . $_SESSION['loggedInId']);
+        $server_request = curl_init(SERVER_URL . "/api/v1/getAllSubjectsByAssistant/" . $_SESSION['loggedInId']);
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -349,7 +349,7 @@
 
         $subjects = "<option value=''>-</option>";
 
-        $server_request = curl_init(SERVER_URL . "/api/getAllSubjectsByAssistant/" . $_SESSION['loggedInId']);
+        $server_request = curl_init(SERVER_URL . "/api/v1/getAllSubjectsByAssistant/" . $_SESSION['loggedInId']);
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -410,7 +410,7 @@
 
         $_SESSION["proxyIdentifier"] = getNewProxyIdentifier($xml);
 
-        $server_request = curl_init(SERVER_URL . "/api/getAllStaff");
+        $server_request = curl_init(SERVER_URL . "/api/v1/getAllStaff");
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -461,7 +461,7 @@
         
         $_SESSION["proxyIdentifier"] = getNewProxyIdentifier($xml);
 
-        $server_request = curl_init(SERVER_URL . "/api/getAllStudents");
+        $server_request = curl_init(SERVER_URL . "/api/v1/getAllStudents");
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -517,7 +517,7 @@
 
         $_SESSION["proxyIdentifier"] = getNewProxyIdentifier($xml);
 
-        $server_request = curl_init(SERVER_URL . "/api/getAllSubjects");
+        $server_request = curl_init(SERVER_URL . "/api/v1/getAllSubjects");
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -559,7 +559,7 @@
         header("HTTP/1.0 401 Unauthorized");
         if (@$_SERVER['PHP_AUTH_USER'] === 'Administrator' && password_verify(@$_SERVER['PHP_AUTH_PW'], "$2y$10\$zeRF8YO1yIitpNMyuyHMpuYwBFRcPh96L6Bol0AE1wztZpiUfKU9S")){
             foreach(["SingidunumBG", "SingidunumNS", "SingidunumNIS"] as $proxyIdentifier){
-                $server_request = curl_init(SERVER_URL . "/api/csrfLogin");
+                $server_request = curl_init(SERVER_URL . "/api/v1/csrfLogin");
 
                 curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
                 curl_setopt($server_request, CURLOPT_HEADER, true); //Capture headers

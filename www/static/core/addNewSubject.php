@@ -21,7 +21,7 @@
     else {
         $checkingTitle_temp = explode("/",$subject_name)[0];
 
-        $server_request = curl_init(SERVER_URL . "/api/addNewSubject");
+        $server_request = curl_init(SERVER_URL . "/api/v1/addNewSubject");
 
         $subjectData = json_encode(array(
             "title" => explode("/",$subject_name)[0],

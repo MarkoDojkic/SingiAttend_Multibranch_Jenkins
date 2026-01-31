@@ -4,11 +4,17 @@ RewriteEngine On
 RewriteCond %{HTTP:X-Forwarded-Proto} =https
 RewriteRule .* - [E=HTTPS:on]
 
-# Forbid direct access to /static
-RewriteCond %{REQUEST_URI} ^/static/ [NC]
-RewriteCond %{HTTP_REFERER} ^$ [OR]
-RewriteCond %{HTTP_REFERER} !^https?://%{HTTP_HOST} [NC]
+# Optional configurable prefix
+RewriteCond %{ENV:APP_CONTEXT_PATH} !^$
+RewriteRule ^(.*)$ %{ENV:APP_CONTEXT_PATH}/$1 [L,QSA]
+
+# Forbid direct access to /static (works with optional prefix)
+RewriteCond %{ENV:APP_CONTEXT_PATH} (.*)
+RewriteCond %{REQUEST_URI} ^%1/static/ [NC]
+RewriteCond %{HTTP_REFERER} ^$ [OR]   # No referer
+RewriteCond %{HTTP_REFERER} !^https?://%{HTTP_HOST} [NC]  # Optional: allow same host referer
 RewriteRule ^.*$ - [F,L]
 
+# Custom error pages
 ErrorDocument 404 /error404.html
 ErrorDocument 403 /error404.html

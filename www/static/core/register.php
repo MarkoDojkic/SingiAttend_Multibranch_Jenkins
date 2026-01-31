@@ -30,7 +30,7 @@
                     || ($data_csv[$i][3] !== "professor" && $data_csv[$i][3] !== "assistant")
             ) file_put_contents($invalid_csv_path, $data_csv[$i][2] . " - " . $xml->errors->csvInvalidUser[0] . "<br>\n", FILE_APPEND | LOCK_EX);
             else {
-                $server_request = curl_init(SERVER_URL . "/api/insert/staff");
+                $server_request = curl_init(SERVER_URL . "/api/v1/insert/staff");
                 
                 $user_data = array("nameSurname" => $data_csv[$i][0], "email" => $data_csv[$i][2], "passwordHash" => $data_csv[$i][1], "role" => $data_csv[$i][3]);
 
@@ -105,7 +105,7 @@
         }
     }
     else {
-        $server_request = curl_init(SERVER_URL . "/api/insert/staff");
+        $server_request = curl_init(SERVER_URL . "/api/v1/insert/staff");
                 
         $user_data = array("nameSurname" => $nameSurname, "email" => $email, "passwordHash" => $password, "role" => $_POST['registerAs']);
 

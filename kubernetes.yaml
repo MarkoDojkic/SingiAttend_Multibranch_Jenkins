@@ -123,7 +123,9 @@ metadata:
   name: singiattend-fe-cm
   namespace: nexus
 data:
+  APP_CONTEXT_PATH: /teacher
   BE_SERVICE_NAME: singiattend-server.nexus.svc.cluster.local
+  BE_APP_CONTEXT_PATH: /server
   BE_PORT: "62811"
 ---
 apiVersion: v1
@@ -133,6 +135,7 @@ metadata:
   namespace: nexus
 data:
   APP_NAME: singiattend-server
+  APP_CONTEXT_PATH: /server
   PORT: "62811"
   MONGO_HOST: singiattend-mongo.nexus.svc.cluster.local
   MONGO_PORT: "27017"
@@ -149,6 +152,7 @@ metadata:
   name: singiattend-sp-cm
   namespace: nexus
 data:
+  PROXY_APP_CONTEXT_PATH: /student
   PROXY_APP_NAME: singiattend-student-proxy
   KUBERNETES_NAMESPACE: nexus
   PROXY_PORT: "62814"
