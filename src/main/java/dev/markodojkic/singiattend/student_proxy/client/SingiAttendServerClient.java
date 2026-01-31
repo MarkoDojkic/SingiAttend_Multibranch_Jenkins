@@ -20,25 +20,25 @@ import java.util.List;
 )
 public interface SingiAttendServerClient {
 
-    @GetMapping("/csrfLogin")
+    @GetMapping("/api/v1/csrfLogin")
     ResponseEntity<CsrfToken> csrfLogin();
 
-    @PostMapping("/api/insert/student")
+    @PostMapping("/api/v1/insert/student")
     StudentDTO addNewStudent(@RequestBody StudentDTO newStudent);
 
-    @GetMapping("/api/getCourseData/{index}")
+    @GetMapping("/api/v1/getCourseData/{index}")
     List<CourseDataInstance> getCourseData(@PathVariable("index") String index);
 
-    @GetMapping("/api/getAttendanceData/{index}")
+    @GetMapping("/api/v1/getAttendanceData/{index}")
     List<AttendanceDataInstance> getAttendanceData(@PathVariable("index") String index);
 
-    @PostMapping("/api/checkPassword/student/{index}")
+    @PostMapping("/api/v1/checkPassword/student/{index}")
     String checkPasswordStudent(@PathVariable("index") String index, @RequestBody String password);
 
-    @GetMapping("/api/getStudentName/{index}")
+    @GetMapping("/api/v1/getStudentName/{index}")
     String getStudentName(@PathVariable("index") String index);
 
-    @GetMapping("/api/recordAttendance/{index}/{id}/{isExercise}")
+    @GetMapping("/api/v1/recordAttendance/{index}/{id}/{isExercise}")
     String recordAttendance(
         @PathVariable("index") String index,
         @PathVariable("id") String id,
