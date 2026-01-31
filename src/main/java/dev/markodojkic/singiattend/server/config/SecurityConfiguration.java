@@ -33,13 +33,13 @@ public class SecurityConfiguration {
     @Value("${server.ssl.key-password}")
     private String serverPassword;
 
+    @Value("${allowed-origins}")
+    private String allowedOrigins;
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(
-                "https://localhost:62812",           // FE dev
-                "https://kangaroo-discrete-viper.ngrok-free.app" // Static ngrok URL for mobile
-        ));
+        configuration.setAllowedOrigins(List.of(allowedOrigins.split(",")));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-CSRF-TOKEN-SECRET"));
         configuration.setAllowCredentials(true); // Needed for cookies/auth
@@ -58,7 +58,7 @@ public class SecurityConfiguration {
 
         http.securityMatcher("/api/**")
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/api/csrfLogin").permitAll()
+                .requestMatchers("/api/v1/csrfLogin", "/actuator/**").permitAll()
                 .anyRequest().authenticated()
             )
             .httpBasic(httpBasic -> httpBasic
@@ -70,7 +70,7 @@ public class SecurityConfiguration {
             .csrf(csrf -> csrf
                 .csrfTokenRepository(csrfTokenRepository)
                 .csrfTokenRequestHandler(tokenHandler)
-                .ignoringRequestMatchers("/api/csrfLogin")
+                .ignoringRequestMatchers("/api/v1/csrfLogin", "/actuator/**")
             )
             .cors(cors -> cors
                 .configurationSource(corsConfigurationSource())
@@ -85,7 +85,7 @@ public class SecurityConfiguration {
                         .policy("geolocation=(), microphone=(), camera=()"))
             )
             .logout(logout -> logout
-                .logoutUrl("/api/csrfLogout")
+                .logoutUrl("/api/v1/csrfLogout")
                 .invalidateHttpSession(true)
                 .deleteCookies("JSESSIONID", "XSRF-TOKEN")
                 .clearAuthentication(true)

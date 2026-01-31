@@ -9,15 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api")
-@CrossOrigin(
-    origins = {
-        "https://localhost:62812",
-        "https://kangaroo-discrete-viper.ngrok-free.app"
-    },
-    allowCredentials = "true",
-    allowedHeaders = {"Authorization", "Content-Type", "X-CSRF-TOKEN-SECRET"}
-)
+@RequestMapping("/api/v1")
 public class ServerController {
     private final ServerService serverService;
 
@@ -25,7 +17,7 @@ public class ServerController {
         this.serverService = serverService;
     }
 
-    @GetMapping("/csrfLogin")
+    @GetMapping("csrfLogin")
     CsrfToken csrfLogin(CsrfToken token) {
         return token;
     }

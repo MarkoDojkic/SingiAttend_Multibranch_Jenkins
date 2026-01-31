@@ -2,6 +2,7 @@ package dev.markodojkic.singiattend.server.config;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.www.BasicAuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
@@ -11,6 +12,9 @@ import java.io.PrintWriter;
 
 @Component
 public class MyBasicAuthenticationEntryPoint extends BasicAuthenticationEntryPoint {
+
+    @Value("${REALM_NAME}")
+    private String realmName;
 
     @SuppressWarnings("NullableProblems")
     @Override
@@ -24,7 +28,7 @@ public class MyBasicAuthenticationEntryPoint extends BasicAuthenticationEntryPoi
 
     @Override
     public void afterPropertiesSet() {
-        setRealmName("SingiAttend-Server");
+        setRealmName(realmName);
         super.afterPropertiesSet();
     }
 }
