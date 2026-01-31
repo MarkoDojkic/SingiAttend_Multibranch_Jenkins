@@ -21,7 +21,7 @@
     else {
         if($password === null) $errors[] = "userNotFound";
         else {
-            $server_request = curl_init(SERVER_URL . "/api/csrfLogin");
+            $server_request = curl_init(SERVER_URL . "/api/v1/csrfLogin");
 
             curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($server_request, CURLOPT_HEADER, true); //Capture headers
@@ -53,7 +53,7 @@
 
             curl_close($server_request);
 
-            $server_request = curl_init(SERVER_URL . "/api/checkPassword/staff/" . $id);
+            $server_request = curl_init(SERVER_URL . "/api/v1/checkPassword/staff/" . $id);
 
             curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);  // To return the response as a string
             curl_setopt($server_request, CURLOPT_CUSTOMREQUEST, "POST");  // Set request type to POST
@@ -74,7 +74,7 @@
             } else {
                 if (!str_contains($response, ":professor") && !str_contains($response, ":assistant")) {
                     $errors[] = "wrong_pass";
-                    $server_request = curl_init(SERVER_URL . "/api/csrfLogout");
+                    $server_request = curl_init(SERVER_URL . "/api/v1/csrfLogout");
 
                     curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
                     curl_setopt($server_request, CURLOPT_HTTPHEADER, array(

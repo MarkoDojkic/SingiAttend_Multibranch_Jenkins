@@ -9,7 +9,7 @@
     $primaryKey = $table . '_id';
 
     if($table === 'lecture'){
-        $server_request = curl_init(SERVER_URL . "/api/getLecture/" . $_POST["$primaryKey"]);
+        $server_request = curl_init(SERVER_URL . "/api/v1/getLecture/" . $_POST["$primaryKey"]);
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -25,7 +25,7 @@
 
         curl_close($server_request);
     } else {
-        $server_request = curl_init(SERVER_URL . "/api/getExercise/" . $_POST["$primaryKey"]);
+        $server_request = curl_init(SERVER_URL . "/api/v1/getExercise/" . $_POST["$primaryKey"]);
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -48,7 +48,7 @@
     $attendance = $xml->{($table === 'lecture' ? "professor" : "assistant") . "Page"}->notOverYet[0];
 
     if(new DateTime() >= $endedAt) {
-        $server_request = curl_init(SERVER_URL . "/api/totalStudents/" . $data['subjectId']);
+        $server_request = curl_init(SERVER_URL . "/api/v1/totalStudents/" . $data['subjectId']);
             
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
