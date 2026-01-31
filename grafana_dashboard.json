@@ -1,0 +1,182 @@
+{
+  "annotations":{"list":[]},
+  "editable":true,
+  "gnetId":null,
+  "graphTooltip":0,
+  "id":null,
+  "links":[],
+  "panels":[
+    {
+      "type":"row",
+      "title":"PHP-FPM Gauges",
+      "gridPos":{"x":0,"y":0,"w":24,"h":1}
+    },
+    {
+      "title":"Active Processes",
+      "type":"gauge",
+      "targets":[{"expr":"singiattend_fe_active_processes"}],
+      "gridPos":{"x":0,"y":1,"w":6,"h":6}
+    },
+    {
+      "title":"Idle Processes",
+      "type":"gauge",
+      "targets":[{"expr":"singiattend_fe_idle_processes"}],
+      "gridPos":{"x":6,"y":1,"w":6,"h":6}
+    },
+    {
+      "title":"Total Processes",
+      "type":"gauge",
+      "targets":[{"expr":"singiattend_fe_total_processes"}],
+      "gridPos":{"x":12,"y":1,"w":6,"h":6}
+    },
+    {
+      "title":"Accepted Connections",
+      "type":"stat",
+      "targets":[{"expr":"singiattend_fe_accepted_connections"}],
+      "gridPos":{"x":0,"y":7,"w":6,"h":5}
+    },
+    {
+      "title":"Listen Queue",
+      "type":"stat",
+      "targets":[{"expr":"singiattend_fe_listen_queue"}],
+      "gridPos":{"x":6,"y":7,"w":6,"h":5}
+    },
+    {
+      "title":"Max Listen Queue",
+      "type":"stat",
+      "targets":[{"expr":"singiattend_fe_max_listen_queue"}],
+      "gridPos":{"x":12,"y":7,"w":6,"h":5}
+    },
+    {
+      "title":"Slow Requests",
+      "type":"stat",
+      "targets":[{"expr":"singiattend_fe_slow_requests"}],
+      "gridPos":{"x":18,"y":7,"w":6,"h":5}
+    },
+    {
+      "title":"Max Children Reached",
+      "type":"stat",
+      "targets":[{"expr":"singiattend_fe_max_children_reached"}],
+      "gridPos":{"x":0,"y":12,"w":6,"h":5}
+    },
+    {
+      "title":"PHP Version",
+      "type":"stat",
+      "targets":[{"expr":"singiattend_fe_php_info"}],
+      "gridPos":{"x":6,"y":12,"w":6,"h":5}
+    },
+    {
+      "type":"row",
+      "title":"PHP-FPM Time Series",
+      "gridPos":{"x":0,"y":18,"w":24,"h":1}
+    },
+    {
+      "title":"FPM Processes Over Time",
+      "type":"graph",
+      "targets":[
+        {"expr":"singiattend_fe_active_processes","legendFormat":"Active"},
+        {"expr":"singiattend_fe_idle_processes","legendFormat":"Idle"},
+        {"expr":"singiattend_fe_total_processes","legendFormat":"Total"}
+      ],
+      "gridPos":{"x":0,"y":19,"w":12,"h":8}
+    },
+    {
+      "title":"Accepted Connections & Slow Requests",
+      "type":"graph",
+      "targets":[
+        {"expr":"singiattend_fe_accepted_connections","legendFormat":"Accepted/s"},
+        {"expr":"singiattend_fe_slow_requests","legendFormat":"Slow Requests"}
+      ],
+      "gridPos":{"x":12,"y":19,"w":12,"h":8}
+    },
+    {
+      "title":"Listen Queue Trend",
+      "type":"graph",
+      "targets":[
+        {"expr":"singiattend_fe_listen_queue","legendFormat":"Listen Queue"},
+        {"expr":"singiattend_fe_max_listen_queue","legendFormat":"Max Queue"}
+      ],
+      "gridPos":{"x":0,"y":27,"w":12,"h":8}
+    },
+    {
+      "title":"Max Children Reached Trend",
+      "type":"graph",
+      "targets":[{"expr":"singiattend_fe_max_children_reached","legendFormat":"Max Children"}],
+      "gridPos":{"x":12,"y":27,"w":12,"h":8}
+    },
+    {
+      "type":"row",
+      "title":"Pod Metrics",
+      "gridPos":{"x":0,"y":35,"w":24,"h":1}
+    },
+    {
+      "title":"FE Pod CPU",
+      "type":"graph",
+      "targets":[{"expr":"rate(container_cpu_usage_seconds_total{pod=~\"singiattend-fe.*\"}[1m])","legendFormat":"CPU"}],
+      "gridPos":{"x":0,"y":36,"w":12,"h":6}
+    },
+    {
+      "title":"FE Pod Memory",
+      "type":"graph",
+      "targets":[{"expr":"container_memory_usage_bytes{pod=~\"singiattend-fe.*\"}","legendFormat":"Memory"}],
+      "gridPos":{"x":12,"y":36,"w":12,"h":6}
+    },
+    {
+      "title":"FE Pod Network I/O",
+      "type":"graph",
+      "targets":[
+        {"expr":"rate(container_network_receive_bytes_total{pod=~\"singiattend-fe.*\"}[1m])","legendFormat":"Rx"},
+        {"expr":"rate(container_network_transmit_bytes_total{pod=~\"singiattend-fe.*\"}[1m])","legendFormat":"Tx"}
+      ],
+      "gridPos":{"x":0,"y":42,"w":12,"h":6}
+    },
+    {
+      "title":"FE Pod Filesystem Usage",
+      "type":"graph",
+      "targets":[{"expr":"container_fs_usage_bytes{pod=~\"singiattend-fe.*\"}","legendFormat":"FS"}],
+      "gridPos":{"x":12,"y":42,"w":12,"h":6}
+    },
+    {
+      "type":"row",
+      "title":"Node Metrics",
+      "gridPos":{"x":0,"y":48,"w":24,"h":1}
+    },
+    {
+      "title":"Node CPU Usage",
+      "type":"graph",
+      "targets":[{"expr":"100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[1m])) * 100)","legendFormat":"CPU"}],
+      "gridPos":{"x":0,"y":49,"w":12,"h":6}
+    },
+    {
+      "title":"Node Memory Usage",
+      "type":"graph",
+      "targets":[{"expr":"node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes","legendFormat":"Memory"}],
+      "gridPos":{"x":12,"y":49,"w":12,"h":6}
+    },
+    {
+      "title":"Node Disk Usage",
+      "type":"graph",
+      "targets":[{"expr":"node_filesystem_size_bytes - node_filesystem_free_bytes","legendFormat":"Disk"}],
+      "gridPos":{"x":0,"y":55,"w":12,"h":6}
+    },
+    {
+      "title":"Node Network I/O",
+      "type":"graph",
+      "targets":[
+        {"expr":"rate(node_network_receive_bytes_total[1m])","legendFormat":"Rx"},
+        {"expr":"rate(node_network_transmit_bytes_total[1m])","legendFormat":"Tx"}
+      ],
+      "gridPos":{"x":12,"y":55,"w":12,"h":6}
+    }
+  ],
+  "schemaVersion":36,
+  "style":"dark",
+  "tags":["singiattend","php","fpm","node","pod","full-stack"],
+  "templating":{"list":[]},
+  "time":{"from":"now-6h","to":"now"},
+  "timepicker":{},
+  "timezone":"browser",
+  "title":"SingiAttend-FE Complete Dashboard",
+  "version":1
+}
+
