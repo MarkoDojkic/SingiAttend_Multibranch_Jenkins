@@ -5,7 +5,7 @@
     const DIR_LANGUAGES = DIR_STATIC . "/languages";
     const DIR_MISCELLANEOUS = DIR_STATIC . "/miscellaneous";
     const DIR_TEMPLATES = DIR_STATIC . "/templates";
-    const SSL_CERTIFICATE_PATH = DIR_ROOT . DIR_MISCELLANEOUS . "/fullchain_ssl.pem";
+const SSL_CERTIFICATE_PATH = "/etc/nginx/ssl/intermediateCA.pem";
 
     $beHost = getenv("BE_SERVICE_NAME");
     $bePort = getenv('BE_PORT');
