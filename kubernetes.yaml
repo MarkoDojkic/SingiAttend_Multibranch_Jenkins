@@ -220,15 +220,24 @@ spec:
             - secretRef:
                 name: fe-ssl-secret
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: /index.php?language=serbianCyrilic&page=login
               port: 80
+              scheme: HTTP
             initialDelaySeconds: 10
             periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+
           livenessProbe:
-            tcpSocket:
+            httpGet:
+              path: /index.php?language=serbianCyrilic&page=login
               port: 80
+              scheme: HTTP
             initialDelaySeconds: 30
             periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 5
           resources:
             requests:
               memory: "1Gi"
@@ -293,7 +302,7 @@ spec:
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "62811"
-        prometheus.io/path: "/actuator/health/prometheus"
+        prometheus.io/path: "/server/actuator/prometheus"
     spec:
       containers:
         - name: singiattend-server
@@ -309,17 +318,21 @@ spec:
           readinessProbe:
             httpGet:
               scheme: HTTPS
-              path: /actuator/health/readiness
-              port: 62811
-            initialDelaySeconds: 10
-            periodSeconds: 15
-          livenessProbe:
-            httpGet:
-              scheme: HTTPS
-              path: /actuator/health/liveness
+              path: /server/actuator/health/readiness
               port: 62811
             initialDelaySeconds: 30
             periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 5
+          livenessProbe:
+            httpGet:
+              scheme: HTTPS
+              path: /server/actuator/health/liveness
+              port: 62811
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 5
           resources:
             requests:
               memory: "1Gi"
@@ -366,7 +379,7 @@ spec:
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "62814"
-        prometheus.io/path: "/actuator/health/prometheus"
+        prometheus.io/path: "/student/actuator/prometheus"
     spec:
       containers:
         - name: singiattend-student-proxy
@@ -382,17 +395,21 @@ spec:
           readinessProbe:
             httpGet:
               scheme: HTTPS
-              path: /actuator/health/readiness
-              port: 62814
-            initialDelaySeconds: 10
-            periodSeconds: 15
-          livenessProbe:
-            httpGet:
-              scheme: HTTPS
-              path: /actuator/health/liveness
+              path: /student/actuator/health/readiness
               port: 62814
             initialDelaySeconds: 30
             periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 5
+          livenessProbe:
+            httpGet:
+              scheme: HTTPS
+              path: /student/actuator/health/liveness
+              port: 62814
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 5
           resources:
             requests:
               memory: "1Gi"
@@ -457,7 +474,7 @@ spec:
     - host: singiattend.k8s.markodojkic.local
       http:
         paths:
-          - path: /teacher
+          - path: /
             pathType: Prefix
             backend:
               service:
