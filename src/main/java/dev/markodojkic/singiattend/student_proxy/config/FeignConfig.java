@@ -16,8 +16,12 @@ public class FeignConfig {
                 var req = attrs.getRequest();
                 var csrf = req.getHeader("X-CSRF-TOKEN-SECRET");
                 var cookies = req.getHeader("Cookie");
+                var xTenantId = req.getHeader("X-Tenant-Id");
+                var authorization = req.getHeader("Authorization");
                 if (csrf != null) requestTemplate.header("X-CSRF-TOKEN-SECRET", csrf);
                 if (cookies != null) requestTemplate.header("Cookie", cookies);
+                if (xTenantId != null) requestTemplate.header("X-Tenant-Id", xTenantId);
+                if (authorization != null) requestTemplate.header("Authorization", authorization);
             }
         };
     }

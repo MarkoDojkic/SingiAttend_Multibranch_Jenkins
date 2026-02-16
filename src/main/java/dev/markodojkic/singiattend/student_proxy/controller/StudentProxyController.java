@@ -8,12 +8,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.web.csrf.DefaultCsrfToken;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/proxy")
+@RequestMapping("/api/v1")
 public class StudentProxyController {
     private final SingiAttendServerClient backendClient;
     private final Logger logger = LoggerFactory.getLogger(StudentProxyController.class);
@@ -23,7 +23,7 @@ public class StudentProxyController {
     }
 
     @GetMapping("/csrfLogin")
-    public ResponseEntity<CsrfToken> csrfLogin(HttpServletRequest request) {
+    public ResponseEntity<DefaultCsrfToken> csrfLogin(HttpServletRequest request) {
         String clientIp = getClientIp(request);
         logger.info("CSRF login requested from IP: {}", clientIp);
         return backendClient.csrfLogin();

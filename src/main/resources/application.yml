@@ -1,12 +1,23 @@
 spring:
   application:
     name: ${PROXY_APP_NAME:SingiAttend-Student_Proxy}
+  main:
+    allow-circular-references: true
+    cloud-platform: kubernetes
   cloud:
+    compatibility-verifier:
+      enabled: false #Spring Boot 4.1.x not yet set as compatible with spring cloud 2025.1.1
     kubernetes:
       discovery:
         enabled: true
       client:
         namespace: ${KUBERNETES_NAMESPACE:default}
+    loadbalancer:
+      simple:
+        health-check-path: ${feign_client.path}/actuator/health
+        scheme: https
+        secure: true
+
 
 management:
   endpoints:
@@ -44,6 +55,8 @@ server:
     enabled-protocols: TLSv1.2,TLSv1.3
     protocol: TLS
 
-feign:
-  singiattend:
-    server_client: ${PROXY_FEIGN_SINGIATTEND_CLIENT:singiattend-server}
+feign_client:
+  name: ${PROXY_FEIGN_CLIENT_NAME:singiattend-server}
+  url: ${PROXY_FEIGN_CLIENT_URL:}
+  path: ${PROXY_FEIGN_CLIENT_PATH:}
+  context-id: ${PROXY_FEIGN_CONTEXT_ID:singiattend-server-client}
