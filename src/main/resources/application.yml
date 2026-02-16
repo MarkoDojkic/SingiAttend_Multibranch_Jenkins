@@ -5,9 +5,11 @@ spring:
     allow-circular-references: true
     cloud-platform: kubernetes
   cloud:
+    compatibility-verifier:
+      enabled: false #Spring Boot 4.1.x not yet set as compatible with spring cloud 2025.1.1
     kubernetes:
       discovery:
-        enabled: true
+        enabled: false
       client:
         namespace: ${KUBERNETES_NAMESPACE:default}
 
@@ -48,5 +50,6 @@ server:
     protocol: TLS
 
 tenants: ${TENANTS}
-mongoHost: ${MONGO_HOST:localhost:27017}
+mongo-host: ${MONGO_HOST:localhost:27017}
 allowed-origins: ${ALLOWED_ORIGINS}
+realm-name: ${REALM_NAME:singiattend-server}

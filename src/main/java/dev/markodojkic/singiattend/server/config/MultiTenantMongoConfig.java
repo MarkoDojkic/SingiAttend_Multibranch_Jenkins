@@ -32,7 +32,7 @@ import java.util.Map;
 public class MultiTenantMongoConfig {
 
     private final Map<String, MongoDatabaseFactory> tenantFactories = new HashMap<>();
-    @Value("${mongoHost}")
+    @Value("${mongo-host}")
     private String mongoHost;  // Inject from properties or env
     @Value("${tenants}")
     private String tenantJson;
