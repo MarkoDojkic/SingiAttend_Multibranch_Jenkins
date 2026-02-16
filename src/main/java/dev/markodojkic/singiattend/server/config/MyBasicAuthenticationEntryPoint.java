@@ -13,7 +13,7 @@ import java.io.PrintWriter;
 @Component
 public class MyBasicAuthenticationEntryPoint extends BasicAuthenticationEntryPoint {
 
-    @Value("${REALM_NAME}")
+    @Value("${realm-name}")
     private String realmName;
 
     @SuppressWarnings("NullableProblems")
