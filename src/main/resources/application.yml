@@ -1,23 +1,19 @@
 spring:
+  profiles:
+    default: dev
+  config:
+    activate:
+      on-profile: dev, kubernetes
   application:
-    name: ${PROXY_APP_NAME:SingiAttend-Student_Proxy}
+    name: ${APP_NAME:SingiAttend-Student_Proxy}
   main:
     allow-circular-references: true
-    cloud-platform: kubernetes
   cloud:
     compatibility-verifier:
       enabled: false #Spring Boot 4.1.x not yet set as compatible with spring cloud 2025.1.1
-    kubernetes:
-      discovery:
+    openfeign:
+      http2client:
         enabled: true
-      client:
-        namespace: ${KUBERNETES_NAMESPACE:default}
-    loadbalancer:
-      simple:
-        health-check-path: ${feign_client.path}/actuator/health
-        scheme: https
-        secure: true
-
 
 management:
   endpoints:
@@ -42,21 +38,58 @@ management:
 
 server:
   servlet:
-    context-path: ${PROXY_APP_CONTEXT_PATH:}
-  port: ${PROXY_PORT:62814}
+    context-path: ${APP_CONTEXT_PATH:}
+  port: ${PORT:62814}
   http2:
     enabled: true
   ssl:
+    trust-store: classpath:truststore.jks
+    trust-store-password: ${SSL_TRUST_STORE_PASSWORD}
+    trust-store-type: JKS
     key-store: classpath:ssl_keystore-signed.p12
     key-store-type: PKCS12
-    key-store-password: ${PROXY_SERVER_SSL_KEY_STORE_PASSWORD}
-    key-password: ${PROXY_SERVER_SSL_KEY_PASSWORD}
+    key-store-password: ${SSL_KEY_STORE_PASSWORD}
+    key-password: ${SSL_KEY_PASSWORD}
     enabled: true
     enabled-protocols: TLSv1.2,TLSv1.3
     protocol: TLS
 
+---
+spring:
+  config:
+    activate:
+      on-cloud-platform: kubernetes
+  cloud:
+    kubernetes:
+      discovery:
+        enabled: true
+      client:
+        namespace: ${KUBERNETES_NAMESPACE:default}
+    loadbalancer:
+      instances:
+        singiattend-server:
+          scheme: https
+          secure: true
+          health-check-path: ${feign_client.path}/actuator/health
+          port: ${FEIGN_CLIENT_PORT:443}
+
 feign_client:
-  name: ${PROXY_FEIGN_CLIENT_NAME:singiattend-server}
-  url: ${PROXY_FEIGN_CLIENT_URL:}
-  path: ${PROXY_FEIGN_CLIENT_PATH:}
-  context-id: ${PROXY_FEIGN_CONTEXT_ID:singiattend-server-client}
+  name: ${FEIGN_CLIENT_NAME:singiattend-server}
+  url:
+  path: ${FEIGN_CLIENT_PATH:}
+  context-id: ${FEIGN_CONTEXT_ID:singiattend-server-client}
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  cloud:
+    kubernetes:
+      discovery:
+        enabled: false
+
+feign_client:
+  name: ${FEIGN_CLIENT_NAME:singiattend-server}
+  url: ${FEIGN_CLIENT_URL:}
+  path: ${FEIGN_CLIENT_PATH:}
+  context-id: ${FEIGN_CONTEXT_ID:singiattend-server-client}
