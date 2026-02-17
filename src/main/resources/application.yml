@@ -1,17 +1,16 @@
 spring:
+  profiles:
+    default: dev
+  config:
+    activate:
+      on-profile: dev, kubernetes
   application:
     name: ${APP_NAME:SingiAttend-Server}
   main:
     allow-circular-references: true
-    cloud-platform: kubernetes
   cloud:
     compatibility-verifier:
       enabled: false #Spring Boot 4.1.x not yet set as compatible with spring cloud 2025.1.1
-    kubernetes:
-      discovery:
-        enabled: false
-      client:
-        namespace: ${KUBERNETES_NAMESPACE:default}
 
 management:
   endpoints:
@@ -41,10 +40,13 @@ server:
   http2:
     enabled: true
   ssl:
+    trust-store: classpath:truststore.jks
+    trust-store-password: ${SSL_TRUST_STORE_PASSWORD}
+    trust-store-type: JKS
     key-store: classpath:ssl_keystore-signed.p12
     key-store-type: PKCS12
-    key-store-password: ${SERVER_SSL_KEY_STORE_PASSWORD}
-    key-password: ${SERVER_SSL_KEY_PASSWORD}
+    key-store-password: ${SSL_KEY_STORE_PASSWORD}
+    key-password: ${SSL_KEY_PASSWORD}
     enabled: true
     enabled-protocols: TLSv1.2,TLSv1.3
     protocol: TLS
@@ -53,3 +55,24 @@ tenants: ${TENANTS}
 mongo-host: ${MONGO_HOST:localhost:27017}
 allowed-origins: ${ALLOWED_ORIGINS}
 realm-name: ${REALM_NAME:singiattend-server}
+
+---
+spring:
+  config:
+    activate:
+      on-cloud-platform: kubernetes
+  cloud:
+    kubernetes:
+      discovery:
+        enabled: true
+      client:
+        namespace: ${KUBERNETES_NAMESPACE:default}
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  cloud:
+    kubernetes:
+      discovery:
+        enabled: false
