@@ -152,13 +152,13 @@ metadata:
   name: singiattend-sp-cm
   namespace: nexus
 data:
-  PROXY_APP_CONTEXT_PATH: /student
-  PROXY_APP_NAME: singiattend-student-proxy
+  APP_CONTEXT_PATH: /student
+  APP_NAME: singiattend-student-proxy
   KUBERNETES_NAMESPACE: nexus
-  PROXY_PORT: "62814"
-  PROXY_FEIGN_CLIENT_NAME: singiattend-server
-  PROXY_FEIGN_CLIENT_PATH: server
-  PROXY_FEIGN_CONTEXT_ID: singiattend-server-client
+  PORT: "62814"
+  FEIGN_CLIENT_NAME: singiattend-server
+  FEIGN_CLIENT_PATH: server
+  FEIGN_CONTEXT_ID: singiattend-server-client
 ---
 # Secrets
 apiVersion: v1
@@ -177,8 +177,9 @@ metadata:
   namespace: nexus
 type: Opaque
 data:
-  SERVER_SSL_KEY_PASSWORD: c2luZ2lhdHRlbmQtc3R1ZGVudF9zZXJ2ZXIyMDI1
-  SERVER_SSL_KEY_STORE_PASSWORD: c2luZ2lhdHRlbmQtc3R1ZGVudF9zZXJ2ZXIyMDI1
+  SSL_TRUST_STORE_PASSWORD: N15CcFVtNm1edGwjek5Odg==
+  SSL_KEY_PASSWORD: c2luZ2lhdHRlbmQtc3R1ZGVudF9zZXJ2ZXIyMDI1
+  SSL_KEY_STORE_PASSWORD: c2luZ2lhdHRlbmQtc3R1ZGVudF9zZXJ2ZXIyMDI1
 ---
 apiVersion: v1
 kind: Secret
@@ -187,8 +188,9 @@ metadata:
   namespace: nexus
 type: Opaque
 data:
-  PROXY_SERVER_SSL_KEY_PASSWORD: c2luZ2lhdHRlbmQtc3R1ZGVudF9wcm94eTIwMjU=
-  PROXY_SERVER_SSL_KEY_STORE_PASSWORD: c2luZ2lhdHRlbmQtc3R1ZGVudF9wcm94eTIwMjU=
+  SSL_TRUST_STORE_PASSWORD: N15CcFVtNm1edGwjek5Odg==
+  SERVER_SSL_KEY_PASSWORD: c2luZ2lhdHRlbmQtc3R1ZGVudF9wcm94eTIwMjU=
+  SERVER_SSL_KEY_STORE_PASSWORD: c2luZ2lhdHRlbmQtc3R1ZGVudF9wcm94eTIwMjU=
 ---
 # FE Deployment
 apiVersion: apps/v1
@@ -280,7 +282,8 @@ metadata:
   namespace: nexus
 spec:
   ports:
-    - port: 80
+    - name: http
+      port: 80
       targetPort: 80
   selector:
     app: singiattend-fe
@@ -357,7 +360,8 @@ metadata:
   namespace: nexus
 spec:
   ports:
-    - port: 62811
+    - name: https
+      port: 62811
       targetPort: 62811
   selector:
     app: singiattend-be
@@ -434,7 +438,8 @@ metadata:
   namespace: nexus
 spec:
   ports:
-    - port: 62814
+    - name: https
+      port: 62814
       targetPort: 62814
   selector:
     app: singiattend-sp
