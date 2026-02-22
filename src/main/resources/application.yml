@@ -6,8 +6,6 @@ spring:
       on-profile: dev, kubernetes
   application:
     name: ${APP_NAME:SingiAttend-Student_Proxy}
-  main:
-    allow-circular-references: true
   cloud:
     compatibility-verifier:
       enabled: false #Spring Boot 4.1.x not yet set as compatible with spring cloud 2025.1.1
@@ -63,8 +61,13 @@ spring:
     kubernetes:
       discovery:
         enabled: true
+        primary-port-name: 'https'
+        known-secure-ports: 62812
       client:
         namespace: ${KUBERNETES_NAMESPACE:default}
+      loadbalancer:
+        port-name: 'https'
+        mode: SERVICE
 
 feign_client:
   name: ${FEIGN_CLIENT_NAME:singiattend-server}
