@@ -9,9 +9,9 @@
     $studies = array();
     $years = array();
 
-    if (empty($subject_name) || substr_count($subject_name, "/") !== 1 || strpos($subject_name, "/") === 0 || strpos($subject_name, "/") === strlen($subject_name) - 1) { $errors[] = "wrong_sN" };
+    if (empty($subject_name) || substr_count($subject_name, "/") !== 1 || strpos($subject_name, "/") === 0 || strpos($subject_name, "/") === strlen($subject_name) - 1) $errors[] = "wrong_sN";
     
-    if (@$_POST['studies'] === null) { $errors[] = "did_not_selected_any_study" };
+    if (@$_POST['studies'] === null) $errors[] = "did_not_selected_any_study";
 
     if(!empty($errors)){
         foreach ($errors as $errorName){

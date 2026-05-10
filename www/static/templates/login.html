@@ -1,14 +1,56 @@
-<script>
-    function reloadCaptcha() {
-        var captchaImg = document.querySelector('img[src*="captcha.php"]');
-        if (captchaImg) {
-            var src = captchaImg.src.split('?')[0];
-            captchaImg.src = src + '?t=' + Date.now();
-        }
+<style>
+    .captcha-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
     }
 
-    function postLoginRedirect(redirectPath){
-        header("Location: " + redirectPath, true, 307);
+    .captcha-error {
+        color: red;
+        font-size: 14px;
+        min-height: 18px; /* avoids layout shift */
+    }
+</style>
+<script>
+    async function onTurnstileCallback(token) {
+        const loginBtn = document.getElementById('formLoginBtn');
+        const samlLoginBtn = document.getElementById('samlLoginBtn');
+        if (!samlLoginBtn) {
+            console.error('SAML login button not found!');
+            return;
+        } else if (!loginBtn) {
+            console.error('Login button not found!');
+            return;
+        }
+
+        try {
+            const response = await fetch('static/core/cloudflare_turnstile_verification.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ token })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                // enable the link: transfer data-href into href and remove disabled state
+                const realHref = samlLoginBtn.dataset.href;
+                if (realHref) samlLoginBtn.setAttribute('href', realHref);
+                samlLoginBtn.classList.remove('disabled');
+                samlLoginBtn.setAttribute('aria-disabled', 'false');
+                loginBtn.classList.remove('disabled');
+                loginBtn.setAttribute('aria-disabled', 'false');
+                document.getElementById('captchaError').style.display = 'none';
+            } else {
+                document.getElementById('captchaError').style.display = 'block';
+            }
+
+        } catch (error) {
+            console.error('Error verifying token:', error);
+            document.getElementById('captchaError').style.display = 'block';
+        }
     }
 
     fetch('/static/core/set-timezone.php', {
@@ -44,15 +86,20 @@
                     </label>
                 </div>
             </div>
-            <div class="form-group">
-                <img src="{IMAGE_SRC}" alt="Captcha" class="captcha-image">
-                <br><br>
-                <input type="text" id="captcha" name="captcha" pattern="[A-Z]{6}" placeholder="{captcha}" autocomplete="off">
+            <div class="captcha-wrapper">
+                <div class="cf-turnstile form-group"
+                     data-sitekey="{CLOUDFLARE_SITE_KEY}"
+                     data-theme="light"
+                     data-callback="onTurnstileCallback">
+                </div>
+
+                <div id="captchaError" class="captcha-error">{CLOUDFLARE_FAILED_ERROR}</div>
             </div>
             <div class="form-group">
                 <br>
-                <button type="submit" class="btn btn-success">{LOGIN}</button>
+                <button id="formLoginBtn" type="submit" class="btn btn-success disabled" aria-disabled="true">{LOGIN}</button>
                 <button type="reset" class="btn btn-danger">{RESET}</button>
+                <a id="samlLoginBtn" class="btn btn-primary disabled" href="#" data-href="{SAML_LOGIN_HREF}" role="button" aria-disabled="true">{SAML_LOGIN}</a>
             </div>
         </form>
     </div>

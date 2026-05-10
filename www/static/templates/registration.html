@@ -1,13 +1,48 @@
+<style>
+    .captcha-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .captcha-error {
+        color: red;
+        font-size: 14px;
+        min-height: 18px; /* avoids layout shift */
+    }
+</style>
 <script>
-    function reloadCaptcha() {
-        var captchaImg = document.querySelector('img[src*="captcha.php"]');
-        if (captchaImg) {
-            var src = captchaImg.src.split('?')[0];
-            captchaImg.src = src + '?t=' + Date.now();
+    async function onTurnstileCallback(token) {
+        const registerBtn = document.getElementById('registerBtn');
+        if (!registerBtn) {
+            console.error('Register button not found!');
+            return;
+        }
+
+        try {
+            const response = await fetch('static/core/cloudflare_turnstile_verification.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ token })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                registerBtn.classList.remove('disabled');
+                registerBtn.setAttribute('aria-disabled', 'false');
+            } else {
+                document.getElementById('captchaError').style.display = 'block';
+            }
+
+        } catch (error) {
+            console.error('Error verifying token:', error);
+            document.getElementById('captchaError').style.display = 'block';
         }
     }
 </script>
-
 <div class="card text-center" style="width: 36rem; margin:0px auto; font-size: 1.2em;">
     <div class="card-header">
         {HEADER_TITLE}
@@ -46,10 +81,14 @@
                     </label>
                 </div>
             </div>
-            <div class="form-group">
-                <img src="{IMAGE_SRC}" alt="Captcha" class="captcha-image">
-                <br><br>
-                <input type="text" id="captcha" name="captcha" pattern="[A-Z]{6}" placeholder="{captcha}" autocomplete="off">
+            <div class="captcha-wrapper">
+                <div class="cf-turnstile form-group"
+                     data-sitekey="{CLOUDFLARE_SITE_KEY}"
+                     data-theme="light"
+                     data-callback="onTurnstileCallback">
+                </div>
+
+                <div id="captchaError" class="captcha-error">{CLOUDFLARE_FAILED_ERROR}</div>
             </div>
             <div style="display: -webkit-inline-box; margin-left: -30%;">
                 {CSV_MESSAGE} &nbsp;&nbsp;
@@ -58,7 +97,7 @@
             </div>
             <div class="form-group">
                 <br>
-                <input type="submit" class="btn btn-success" value="{REGISTER}"></input>
+                <input id="registerBtn" type="submit" class="btn btn-success disabled" aria-disabled="true" value="{REGISTER}"></input>
                 <input type="reset" class="btn btn-danger" value="{RESET}"></input>
             </div>
         </form>

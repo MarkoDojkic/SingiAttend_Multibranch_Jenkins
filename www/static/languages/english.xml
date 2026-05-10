@@ -56,6 +56,7 @@
       <id>Identification number</id>
       <admin>Administrator</admin>
       <login>Login</login>
+      <samlLogin>SAML Login</samlLogin>
    </loginPage>
    <adminPage>
       <proxyIdentifierModalLabel>Choose place of work</proxyIdentifierModalLabel>
@@ -122,7 +123,6 @@
       <nis>Niš</nis>
       <professor>Professor</professor>
       <assistant>Assistant</assistant>
-      <captcha>Enter captcha text</captcha>
       <register>Register</register>
       <confirm>Confirm your choice</confirm>
       <reset>Reset form</reset>
@@ -143,7 +143,7 @@
       <wrong_email>Input format for "University Email" field is invalid. Please enter valid university email (ending with: @singidunum.ac.rs).</wrong_email>
       <missmatched_pass>"Password" and "Repeat password" doesn't match.</missmatched_pass>
       <notSelected_registerAs>You haven't selected whether you wanna register as Professor or Assistant.</notSelected_registerAs>
-      <invalid_captcha>Captcha text doesn't match image text.</invalid_captcha>
+      <invalid_captcha>CAPTCHA verification failed. Please try again.</invalid_captcha>
       <registrationError>User already exists in database.</registrationError>
       <wrong_id>Your identification number is either incorrect or not existant. Please check again.</wrong_id>
       <wrong_index>Input format for "Index number" field is invalid (correct example: 2020/123456).</wrong_index>

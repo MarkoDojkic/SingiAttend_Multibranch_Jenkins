@@ -1,5 +1,4 @@
 <?php
-
     session_start();
     require_once "../../constants.php";
 
@@ -15,8 +14,6 @@
     //lowercase and digit (length of min 8)
 
     if($_FILES["csv_newUsersList"]["error"] === 0){
-
-        if ($_POST["captcha"] !== $_SESSION['captcha_text']) die("<i style='color:red;font-size:14px;'> - " . $xml->errors->invalid_captcha[0] . "</i><br><br>");
 
         $data_csv = array_map('str_getcsv', file($_FILES['csv_newUsersList']['tmp_name']));
         $invalid_csv_path = DIR_ROOT . DIR_MISCELLANEOUS . "/invalidCsvRows.rtf";
@@ -95,10 +92,7 @@
     if ($password !== trim($_POST["passwordConfirm"]) || !isset($_POST["passwordConfirm"]) || $_POST["passwordConfirm"] === "") $errors[] = "missmatched_pass";
     
     if (!isset($_POST["registerAs"])) $errors[] = "notSelected_registerAs";
-    
-    if ($_POST["captcha"] !== $_SESSION['captcha_text']) $errors[] = "invalid_captcha";
 
-    
     if(sizeof($errors) !== 0){
         foreach ($errors as $errorName){
             echo "<i style='color:red;font-size:14px;'> - " . $xml->errors->{$errorName}[0] . "</i><br><br>";
@@ -144,6 +138,3 @@
             window.top.location.reload();
          }, 5000);</script>";
     }
-
-    unset($_SESSION['captcha_text']);
-    echo '<script>parent.reloadCaptcha();</script>';

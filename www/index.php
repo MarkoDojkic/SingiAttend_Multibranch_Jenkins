@@ -8,12 +8,76 @@
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     </head>
     <body style="background-color: #d3fff8;">
         <?php
-            session_start();          
+            session_start();
             
             require_once "constants.php";
+
+            // Handle SAML callback when Identity Provider redirects back with userContext
+            if (isset($_GET['userContext'])) {
+                $userContext = $_GET['userContext'];
+                $decoded = base64_decode($userContext);
+                $parsed = json_decode($decoded, true);
+
+                if (!$parsed || !isset($parsed['role']) || $parsed['role'] === 'INVALID') {
+                    // Invalid SAML login - redirect back to login page with an error flag
+                    header("Location:/index.php?language=" . ($_SESSION["language"] ?? 'serbianCyrilic') . "&page=login&error=invalid_saml", true, 307);
+                    exit;
+                }
+
+                // Populate PHP session from SAML payload (same shape as samlPostLogin.php expects)
+                $_SESSION['loggedInUser'] = $parsed['nameSurname'] ?? null;
+                $_SESSION['loggedInAs']   = $parsed['role'] ?? null;
+                $_SESSION['loggedInId']   = $parsed['id'] ?? null;
+                $_SESSION['proxyIdentifier'] = $parsed['proxyIdentifier'] ?? null;
+
+                // Perform server-side CSRF login to obtain JSESSIONID and CSRF token (replicates samlPostLogin.php)
+                $server_request = curl_init(SERVER_URL . "/api/v1/csrfLogin");
+
+                curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($server_request, CURLOPT_HEADER, true); // Capture headers
+                curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
+                    "Authorization: Basic " . base64_encode(SERVER_USERNAME . ":" . SERVER_PASSWORD),
+                    "X-Tenant-ID: " . $_SESSION["proxyIdentifier"]
+                ));
+                curl_setopt($server_request, CURLOPT_CAINFO, SSL_CERTIFICATE_PATH);
+                $response = curl_exec($server_request);
+
+                // Split headers and body
+                $header_size = curl_getinfo($server_request, CURLINFO_HEADER_SIZE);
+                $header = substr($response, 0, $header_size);
+                $body = json_decode(substr($response, $header_size), true);
+
+                // Extract JSESSIONID
+                preg_match('/set-cookie: JSESSIONID=([^;]+)/', $header, $jsessionMatches);
+                if (isset($jsessionMatches[1])) $_SESSION['JSESSIONID-' .  $_SESSION["proxyIdentifier"]] = $jsessionMatches[1];
+                else die(file_get_contents("error404.html"));
+
+                // Extract CSRF Token and CSRF secret
+                preg_match('/XSRF-TOKEN=([^;]+)/', $header, $xsrfMatches);
+                $csrfTokenSecret = $body['token'] ?? null;
+                if ($csrfTokenSecret && isset($xsrfMatches[1])) {
+                    $_SESSION['CSRF_TOKEN-' .  $_SESSION["proxyIdentifier"]] = $xsrfMatches[1];
+                    $_SESSION['CSRF_TOKEN_SECRET-' . $_SESSION["proxyIdentifier"]] = $csrfTokenSecret;
+                    $_SESSION['CSRF_TOKEN_HEADER_NAME-' . $_SESSION["proxyIdentifier"]] = $body['headerName'];
+                } else die(file_get_contents("error404.html"));
+
+                curl_close($server_request);
+
+                $_SESSION['isSAMLogin'] = true;
+
+                // Redirect user to appropriate page based on role
+                $lang = $_SESSION["language"] ?? 'serbianCyrilic';
+                if ($_SESSION['loggedInAs'] === 'assistant') {
+                    header("Location:/index.php?language={$lang}&page=teaching_exercises", true, 307);
+                } else {
+                    header("Location:/index.php?language={$lang}&page=teaching_subject_management", true, 307);
+                }
+                exit;
+            }
 
             if(@$_SESSION["language"] !== "english" && 
                     @$_SESSION["language"] !== "serbianCyrilic" 
@@ -30,13 +94,13 @@
                     }
 
             if(@$_GET["page"] !== null) $_SESSION["page"] = $_GET["page"];
-            else header("Location:index.php?language={$_SESSION["language"]}&page={$_SESSION["page"]}", true, 307);
+            else header("Location:/index.php?language={$_SESSION["language"]}&page={$_SESSION["page"]}", true, 307);
             
             echo initiateHeader($xml);
                 
             if(@$_SESSION["loggedInAs"] === "professor"){
                 switch($_SESSION["page"]){
-                    case "login": case "admin_access": header("Location:index.php?language={$_SESSION["language"]}&page=teaching_subject_management", true, 307);
+                    case "login": case "admin_access": header("Location:/index.php?language={$_SESSION["language"]}&page=teaching_subject_management", true, 307);
                     case "teaching_subject_management": echo initiateProfessorPage1($xml); break;
                     case "add_new_subject": echo initiateProfessorPage2($xml); break;
                     case "professor_reports": echo initiateProfessorPage3($xml); break;
@@ -112,19 +176,27 @@
     }
 
     function initiateLoginPage($xml){
-        unset($_SESSION['captcha_text']);
         $page_context = file_get_contents(DIR_TEMPLATES . "/login.html");
         $page_context = str_replace("{FORM_ACTION}", DIR_CORE . "/login.php", $page_context);
-        $page_context = str_replace("{IMAGE_SRC}", DIR_CORE . "/captcha.php", $page_context);
+        $page_context = str_replace("{CLOUDFLARE_SITE_KEY}", getenv('CLOUDFLARE_SITE_KEY'), $page_context);
+        $page_context = str_replace("{CLOUDFLARE_FAILED_ERROR}", "<i style='color:red;font-size:14px;'> - " . $xml->errors->invalid_captcha[0] . "</i><br><br>", $page_context);
         $page_context = str_replace("{HEADER_TITLE}",$xml->loginPage->headerTitle[0], $page_context);
         $page_context = str_replace("{id}",$xml->loginPage->id[0], $page_context);
         $page_context = str_replace("{password}",$xml->registrationPage->password[0], $page_context);
         $page_context = str_replace("{bg}",$xml->registrationPage->bg[0], $page_context);
         $page_context = str_replace("{ns}",$xml->registrationPage->ns[0], $page_context);
         $page_context = str_replace("{nis}",$xml->registrationPage->nis[0], $page_context);
-        $page_context = str_replace("{captcha}",$xml->registrationPage->captcha[0], $page_context);
         $page_context = str_replace("{LOGIN}",$xml->loginPage->login[0], $page_context);
         $page_context = str_replace("{RESET}",$xml->registrationPage->reset[0], $page_context);
+        $page_context = str_replace("{SAML_LOGIN}", $xml->loginPage->samlLogin[0], $page_context);
+        $page_context = str_replace("{SERVER_URL}", SERVER_URL, $page_context);
+
+        // Build SAML IdP login URL for the button (postLoginRedirect back to app root)
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $currentOrigin = $scheme . '://' . $_SERVER['HTTP_HOST'];
+        $relaying = (strpos($currentOrigin, 'local') !== false) ? 'singiattend-local' : 'singiattend-cloudflare';
+        $samlHref = $currentOrigin . '/iam/samlLogin?postLoginRedirect=' . urlencode($currentOrigin . '/') . '&relayingPartyRegistrationId=' . $relaying;
+        $page_context = str_replace('{SAML_LOGIN_HREF}', $samlHref, $page_context);
         
         return $page_context;
     }
@@ -375,11 +447,10 @@
     }
 
     function initiateAdminPage1($xml){
-        unset($_SESSION['captcha_text']);
-
         $page_context = file_get_contents(DIR_TEMPLATES . "/registration.html");
         $page_context = str_replace("{FORM_ACTION}", DIR_CORE . "/register.php", $page_context);
-        $page_context = str_replace("{IMAGE_SRC}", DIR_CORE . "/captcha.php", $page_context);
+        $page_context = str_replace("{CLOUDFLARE_SITE_KEY}", getenv('CLOUDFLARE_SITE_KEY'), $page_context);
+        $page_context = str_replace("{CLOUDFLARE_FAILED_ERROR}", "<i style='color:red;font-size:14px;'> - " . $xml->errors->invalid_captcha[0] . "</i><br><br>", $page_context);
         $page_context = str_replace("{HEADER_TITLE}",$xml->registrationPage->headerTitle[0], $page_context);
         $page_context = str_replace("{nameSurname}",$xml->registrationPage->nameSurname[0], $page_context);
         $page_context = str_replace("{email}",$xml->registrationPage->email[0], $page_context);
@@ -390,7 +461,6 @@
         $page_context = str_replace("{bg}",$xml->registrationPage->bg[0], $page_context);
         $page_context = str_replace("{ns}",$xml->registrationPage->ns[0], $page_context);
         $page_context = str_replace("{nis}",$xml->registrationPage->nis[0], $page_context);
-        $page_context = str_replace("{captcha}",$xml->registrationPage->captcha[0], $page_context);
         $page_context = str_replace("{REGISTER}",$xml->registrationPage->register[0], $page_context);
         $page_context = str_replace("{RESET}",$xml->registrationPage->reset[0], $page_context);
         $page_context = str_replace("{CSV_MESSAGE}",$xml->registrationPage->csvMessage[0], $page_context);
@@ -479,7 +549,6 @@
 
         foreach($data as $student){
             $email = explode("@",$student["email"])[0];
-            $studentEnrollment = $student["study"] . "<br>" . explode("-",$studentEnrollment_temp)[1];
 
             $studentEnrollment = $_SESSION["language"] === "english" ? 
                     $student["study"]["facultyTitleEnglish"] . " <br/> " . $student["study"]["titleEnglish"] . " (" . $student["year"] . ")":
@@ -596,10 +665,10 @@
             $_SESSION['loggedInUser'] = "Administrator";
             $_SERVER["PHP_AUTH_USER"] = null;
             $_SERVER["PHP_AUTH_PW"] = null;
-            header("Location:index.php?language={$_SESSION["language"]}&page=staff_registration",true, 307);
+            header("Location:/index.php?language={$_SESSION["language"]}&page=staff_registration",true, 307);
         }
 
-        echo "<script>window.location = 'index.php?language={$_SESSION["language"]}&page=login';</script>";
+        echo "<script>window.location = '/index.php?language={$_SESSION["language"]}&page=login';</script>";
     }
 
     function getNewProxyIdentifier($xml){

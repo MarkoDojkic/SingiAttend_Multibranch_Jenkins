@@ -56,6 +56,7 @@
      <id>Identifikacioni broj</id>
      <admin>Administrator</admin>
      <login>Prijavi se</login>
+     <samlLogin>SAML prijava</samlLogin>
   </loginPage>
   <adminPage>
      <proxyIdentifierModalLabel>Izaberite radno mesto</proxyIdentifierModalLabel>
@@ -122,7 +123,6 @@
      <nis>Niš</nis>
      <professor>Profesor</professor>
      <assistant>Asistent</assistant>
-     <captcha>Unesite tekst sa slike</captcha>
      <register>Registruj se</register>
      <confirm>Potvrdite Vaš izbor</confirm>
      <reset>Resetuj obrazac</reset>
@@ -143,7 +143,7 @@
      <wrong_email>Format unosa za polje „Univerzitetska e-pošta“ je nevažeći. Unesite važeću univerzitetsku e-adresu (koja se završava sa: @singidunum.ac.rs).</wrong_email>
      <missmatched_pass>"Lozinka" i "Ponovi lozinku" se ne podudaraju.</missmatched_pass>
      <notSelected_registerAs>Niste izabrali da li želite da se registrujete kao profesor ili asistent.</notSelected_registerAs>
-     <invalid_captcha>Uneti tekst se ne podudara sa tekstom na slici.</invalid_captcha>
+     <invalid_captcha>Provera CAPTCHA nije uspela. Molimo pokušajte ponovo.</invalid_captcha>
      <registrationError>Korisnik već postoji u bazi podataka</registrationError>
      <wrong_id>Vaš identifikacioni broj je netačan ili ne postoji. Molimo proverite ponovo.</wrong_id>
      <wrong_index>Format unosa za polje „Broj indeksa“ je nevažeći (ispravan primer: 2020/123456).</wrong_index>

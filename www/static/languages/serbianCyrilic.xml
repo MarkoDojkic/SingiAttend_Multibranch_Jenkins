@@ -55,6 +55,7 @@
      <headerTitle>Унесите свој идентификациони број, лозинку и одаберите радно место.</headerTitle>
      <id>Идентификациони број</id>
      <login>Пријави се</login>
+     <samlLogin>SAML пријава</samlLogin>
   </loginPage>
   <adminPage>
      <proxyIdentifierModalLabel>Изаберите радно место</proxyIdentifierModalLabel>
@@ -120,7 +121,6 @@
      <nis>Ниш</nis>
      <professor>Професор</professor>
      <assistant>Асистент</assistant>
-     <captcha>Унесите текст са слике</captcha>
      <register>Региструј се</register>
      <confirm>Потврдите Ваш избор</confirm>
      <reset>Ресетуј образац</reset>
@@ -141,7 +141,7 @@
      <wrong_email>Формат уноса за поље „Универзитетска е-пошта“ је неважећи. Унесите важећу универзитетску е-адресу (која се завршава са: @ singidunum.ac.rs).</wrong_email>
      <missmatched_pass>"Лозинка" и "Понови лозинку" се не подударају.</missmatched_pass>
      <notSelected_registerAs>Нисте изабрали да ли желите да се региструјете као професор или асистент.</notSelected_registerAs>
-     <invalid_captcha>Унети текст се не подудара са текстом на слици.</invalid_captcha>
+     <invalid_captcha>Провера CAPTCHA није успела. Молимо покушајте поново.</invalid_captcha>
      <registrationError>Корисник већ постоји у бази података</registrationError>
      <wrong_id>Ваш идентификациони број је нетачан или не постоји. Молимо проверите поново.</wrong_id>
      <wrong_index>Формат уноса за поље „Број индекса“ је неважећи (исправан пример: 2020/123456).</wrong_index>

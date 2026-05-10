@@ -37,7 +37,7 @@
             if(json_decode($response)->{"error"} != null) showErrorAlert($xml->errors->wrong_nS[0]);
         }
 
-        if($_POST["newIX_$id"] !== null && preg_match_all("[12]{1}[0-9]{3}\\/[0-9]{6}",$_POST["newIX_$id"])){
+        if(isset($_POST["newIX_$id"]) && preg_match("/[12]\d{3}\/\d{6}/", $_POST["newIX_$id"])){
             $server_request = curl_init(SERVER_URL . "/api/v1/update/student/" . $id);
                 
             curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);

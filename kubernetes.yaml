@@ -80,7 +80,7 @@ spec:
     spec:
       containers:
         - name: singiattend-mongo
-          image: markodojkic.local:5001/singiattend-mongo:latest
+          image: nexus.markodojkic.qzz.io/docker-colima-local/singiattend-mongo:latest
           ports:
             - containerPort: 27017
           volumeMounts:
@@ -136,6 +136,7 @@ metadata:
 data:
   APP_NAME: singiattend-server
   APP_CONTEXT_PATH: /server
+  ALLOWED_ORIGINS: "http://singiattend-sp.nexus.svc.cluster.local:62814,http://singiattend-fe.nexus.svc.cluster.local:80,https://singiattend.k8s.markodojkic.local,https://singiattend.markodojkic.qzz.io"
   PORT: "62811"
   MONGO_HOST: singiattend-mongo.nexus.svc.cluster.local
   MONGO_PORT: "27017"
@@ -144,6 +145,11 @@ data:
       {"tenantId":"SingidunumBG","db":"SingiAttend_BG"},
       {"tenantId":"SingidunumNS","db":"SingiAttend_NS"},
       {"tenantId":"SingidunumNIS","db":"SingiAttend_NIS"}
+    ]
+  IAM_SAML_RELAYING_PARTIES: |
+    [
+      {"metadataEndpoint":"http://keycloak.security.svc.cluster.local/realms/singiattend/protocol/saml/descriptor","host":"keycloak.k8s.markodojkic.local","isSSLEnabled":true,"entityId":"singiattend-local","wantAuthnRequestsSigned":true},
+      {"metadataEndpoint":"http://keycloak.security.svc.cluster.local/realms/singiattend/protocol/saml/descriptor","host":"keycloak.markodojkic.qzz.io","isSSLEnabled":true,"entityId":"singiattend-cloudflare","wantAuthnRequestsSigned":true}
     ]
 ---
 apiVersion: v1
@@ -159,16 +165,32 @@ data:
   FEIGN_CLIENT_NAME: singiattend-server
   FEIGN_CLIENT_PATH: server
   FEIGN_CONTEXT_ID: singiattend-server-client
+  IAM_SAML_RELAYING_PARTIES: |
+    [
+      {"metadataEndpoint":"http://keycloak.security.svc.cluster.local/realms/singiattend/protocol/saml/descriptor","host":"keycloak.k8s.markodojkic.local","isSSLEnabled":true,"entityId":"singiattend-student-local","wantAuthnRequestsSigned":true},
+      {"metadataEndpoint":"http://keycloak.security.svc.cluster.local/realms/singiattend/protocol/saml/descriptor","host":"keycloak.markodojkic.qzz.io","isSSLEnabled":true,"entityId":"singiattend-student-cloudflare","wantAuthnRequestsSigned":true}
+    ]
 ---
 # Secrets
 apiVersion: v1
 kind: Secret
 metadata:
-  name: fe-ssl-secret
+  name: backend-auth-secret
   namespace: nexus
 type: Opaque
 data:
-  SERVER_SSL_KEY_PASSWORD: c2luZ2lhdHRlbmQtc3R1ZGVudF9zZXJ2ZXIyMDI1
+  BACKEND_USERNAME: c2luZ2lhdHRlbmQtYWRtaW4=
+  BACKEND_PASSWORD: c2luZ2lhdHRlbmQtc3R1ZGVudF9zZXJ2ZXIyMDI1
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: fe-cloudflare-secret
+  namespace: nexus
+type: Opaque
+data:
+  CLOUDFLARE_SITE_KEY: <data_expunged>
+  CLOUDFLARE_SECRET_KEY: <data_expunged>
 ---
 apiVersion: v1
 kind: Secret
@@ -192,6 +214,15 @@ data:
   SERVER_SSL_KEY_PASSWORD: c2luZ2lhdHRlbmQtc3R1ZGVudF9wcm94eTIwMjU=
   SERVER_SSL_KEY_STORE_PASSWORD: c2luZ2lhdHRlbmQtc3R1ZGVudF9wcm94eTIwMjU=
 ---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: iam-truststore-secret
+  namespace: nexus
+type: Opaque
+data:
+  IAM_SSL_TRUSTSTORE_PASSWORD: VVBwNj1IRDkhLnokNWY5QA==
+---
 # FE Deployment
 apiVersion: apps/v1
 kind: Deployment
@@ -214,7 +245,7 @@ spec:
     spec:
       containers:
         - name: singiattend-appstack
-          image: markodojkic.local:5001/singiattend-appstack:latest
+          image: nexus.markodojkic.qzz.io/docker-colima-local/singiattend-appstack:latest
           ports:
             - containerPort: 80
               name: fe
@@ -222,7 +253,9 @@ spec:
             - configMapRef:
                 name: singiattend-fe-cm
             - secretRef:
-                name: fe-ssl-secret
+                name: backend-auth-secret
+            - secretRef:
+                name: fe-cloudflare-secret
           readinessProbe:
             httpGet:
               path: /index.php?language=serbianCyrilic&page=login
@@ -252,7 +285,7 @@ spec:
               cpu: "1"
               ephemeral-storage: "1Gi"
         - name: php-metrics
-          image: markodojkic.local:5001/php-metrics:latest
+          image: nexus.markodojkic.qzz.io/docker-colima-local/php-metrics:latest
           ports:
             - containerPort: 9113
               name: metrics
@@ -311,7 +344,7 @@ spec:
     spec:
       containers:
         - name: singiattend-server
-          image: markodojkic.local:5001/singiattend-server:latest
+          image: nexus.markodojkic.qzz.io/docker-colima-local/singiattend-server:latest
           ports:
             - containerPort: 62811
               name: be
@@ -320,6 +353,8 @@ spec:
                 name: singiattend-be-cm
             - secretRef:
                 name: be-ssl-secret
+            - secretRef:
+                name: iam-truststore-secret
           readinessProbe:
             httpGet:
               scheme: HTTPS
@@ -389,7 +424,7 @@ spec:
     spec:
       containers:
         - name: singiattend-student-proxy
-          image: markodojkic.local:5001/singiattend-student-proxy:latest
+          image: nexus.markodojkic.qzz.io/docker-colima-local/singiattend-student-proxy:latest
           ports:
             - containerPort: 62814
               name: sp
@@ -398,6 +433,10 @@ spec:
                 name: singiattend-sp-cm
             - secretRef:
                 name: sp-ssl-secret
+            - secretRef:
+                name: backend-auth-secret
+            - secretRef:
+                name: iam-truststore-secret
           readinessProbe:
             httpGet:
               scheme: HTTPS
@@ -488,6 +527,16 @@ spec:
                 name: singiattend-fe
                 port:
                   number: 80
+    - host: singiattend.markodojkic.qzz.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: singiattend-fe
+                port:
+                  number: 80
 ---
 #Ingress for student
 apiVersion: networking.k8s.io/v1
@@ -515,3 +564,67 @@ spec:
                 name: singiattend-sp
                 port:
                   number: 62814
+    - host: singiattend.markodojkic.qzz.io
+      http:
+        paths:
+          - path: /student
+            pathType: Prefix
+            backend:
+              service:
+                name: singiattend-sp
+                port:
+                  number: 62814
+---
+#Ingress for singiattend-server (SAML related endpoints only)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: singiattend-teacher-saml
+  namespace: nexus
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      rewrite ^/iam(/|$)(.*) /server/iam/$2 break;
+    nginx.ingress.kubernetes.io/use-forwarded-headers: 'true'
+    nginx.ingress.kubernetes.io/use-regex: 'true'
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - singiattend.k8s.markodojkic.local
+      secretName: ingress-k8s-tls
+  rules:
+    - host: singiattend.k8s.markodojkic.local
+      http:
+        paths:
+          - path: /iam(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: singiattend-server
+                port:
+                  number: 62811
+          - path: /server/iam(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: singiattend-server
+                port:
+                  number: 62811
+    - host: singiattend.markodojkic.qzz.io
+      http:
+        paths:
+          - path: /iam(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: singiattend-server
+                port:
+                  number: 62811
+          - path: /server/iam(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: singiattend-server
+                port:
+                  number: 62811

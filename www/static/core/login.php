@@ -1,7 +1,6 @@
 <?php
     session_start();
     require_once "../../constants.php";
-        
     $xml = @simplexml_load_file(DIR_ROOT . DIR_LANGUAGES . "/{$_SESSION["language"]}.xml")  or die(file_get_contents(DIR_ROOT . "/error404.html"));
 
     $errors = array();
@@ -10,8 +9,6 @@
     $password_pattern = "/^[a-z0-9]+$/";
     
     if (!preg_match($password_pattern, $password)) $errors[] = "wrong_pass";
-    
-    if ($_POST["captcha"] != $_SESSION['captcha_text']) $errors[] = "invalid_captcha";
 
     if(sizeof($errors) !== 0){
         foreach ($errors as $errorName){
@@ -107,7 +104,4 @@
             echo "<script>window.top.location.href = '/index.php?language={$_SESSION['language']}&page={$page_redirect}';</script>";
             exit;
         }
-        
-        unset($_SESSION['captcha_text']);
-        echo '<script>parent.reloadCaptcha();</script>';
     }

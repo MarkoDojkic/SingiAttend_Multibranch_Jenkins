@@ -28,6 +28,9 @@
         curl_close($server_request);
     }
 
+    $redirectHostURL = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . "/index.php?language=" . $_SESSION['language'] . "&page=login";
+
+    $redirect = $_SESSION['isSAMLogin'] ? ((isset($_SERVER['HTTPS']) ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . '/iam/samlLogout?postLogoutRedirect=' . rawurlencode($redirectHostURL)) : $redirectHostURL;
     session_unset();
     session_destroy();
-    header("Location: /index.php", true, 307);
+    header('Location: ' . $redirect, true, 307);
