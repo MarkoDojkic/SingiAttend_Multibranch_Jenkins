@@ -145,7 +145,7 @@ pipeline {
 
                     echo "New version: ${nextVersion}"
 
-                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 25') {
+                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 26') {
                         sh """
                             mvn versions:set -DnewVersion=${nextVersion}
                             mvn versions:commit
@@ -164,7 +164,7 @@ pipeline {
         stage('Build') {
             when { expression { !params.SKIP_BUILD } }
             steps {
-                withMaven(maven: 'Maven 4.0', jdk: 'JDK 25') {
+                withMaven(maven: 'Maven 4.0', jdk: 'JDK 26') {
                     sh 'mvn clean install -DskipTests -B'
                 }
             }
@@ -179,7 +179,7 @@ pipeline {
             }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'sonar-creds', usernameVariable: 'SONAR_USER', passwordVariable: 'SONAR_PASS')]) {
-                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 25') {
+                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 26') {
                         sh """
                             mvn sonar:sonar \
                                 -Dsonar.projectKey=SingiAttend-Server-Jenkins \
@@ -203,7 +203,7 @@ pipeline {
                     def pom = readMavenPom file: 'pom.xml'
                     def deployUrl = pom.version.endsWith("SNAPSHOT") ? NEXUS_SNAPSHOT_URL : NEXUS_RELEASE_URL
 
-                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 25') {
+                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 26') {
                         sh "mvn deploy -Dnexus.url=${deployUrl}"
                     }
                 }
@@ -284,7 +284,7 @@ pipeline {
 
         stage('Cleanup') {
             steps {
-                withMaven(maven: 'Maven 4.0', jdk: 'JDK 25') {
+                withMaven(maven: 'Maven 4.0', jdk: 'JDK 26') {
                     sh 'mvn clean -B'
                 }
                 cleanWs(deleteDirs: true, notFailBuild: true)

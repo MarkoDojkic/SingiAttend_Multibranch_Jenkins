@@ -32,7 +32,7 @@ public class StudentProxyController {
     @PostMapping("/insert/student")
     public StudentDTO addNewStudent(@RequestBody StudentDTO student,
                                     @RequestHeader(value = "X-Client-Index", required = false) String index,
-                                    @RequestHeader(value = "X-Client-Device", required = false) String device,
+                                    @RequestHeader(value = "User-Agent", required = false) String device,
                                     HttpServletRequest request) {
 
         logCall(request, index, device, "/insert/student");
@@ -41,7 +41,7 @@ public class StudentProxyController {
 
     @GetMapping("/getCourseData/{index}")
     public List<CourseDataInstance> getCourseData(@PathVariable String index,
-                                                  @RequestHeader(value = "X-Client-Device", required = false) String device,
+                                                  @RequestHeader(value = "User-Agent", required = false) String device,
                                                   HttpServletRequest request) {
         logCall(request, index, device, "/getCourseData");
         return backendClient.getCourseData(index);
@@ -49,7 +49,7 @@ public class StudentProxyController {
 
     @GetMapping("/getAttendanceData/{index}")
     public List<AttendanceDataInstance> getAttendanceData(@PathVariable String index,
-                                                          @RequestHeader(value = "X-Client-Device", required = false) String device,
+                                                          @RequestHeader(value = "User-Agent", required = false) String device,
                                                           HttpServletRequest request) {
         logCall(request, index, device, "/getAttendanceData");
         return backendClient.getAttendanceData(index);
@@ -58,7 +58,7 @@ public class StudentProxyController {
     @PostMapping("/checkPassword/student/{index}")
     public String checkPassword(@PathVariable String index,
                                 @RequestBody String password,
-                                @RequestHeader(value = "X-Client-Device", required = false) String device,
+                                @RequestHeader(value = "User-Agent", required = false) String device,
                                 HttpServletRequest request) {
         logCall(request, index, device, "/checkPassword/student");
         return backendClient.checkPasswordStudent(index, password);
@@ -66,7 +66,7 @@ public class StudentProxyController {
 
     @GetMapping("/getStudentName/{index}")
     public String getStudentName(@PathVariable String index,
-                                 @RequestHeader(value = "X-Client-Device", required = false) String device,
+                                 @RequestHeader(value = "User-Agent", required = false) String device,
                                  HttpServletRequest request) {
         logCall(request, index, device, "/getStudentName");
         return backendClient.getStudentName(index);
@@ -76,7 +76,7 @@ public class StudentProxyController {
     public String recordAttendance(@PathVariable String index,
                                    @PathVariable String id,
                                    @PathVariable boolean isExercise,
-                                   @RequestHeader(value = "X-Client-Device", required = false) String device,
+                                   @RequestHeader(value = "User-Agent", required = false) String device,
                                    HttpServletRequest request) {
         logCall(request, index, device, "/recordAttendance");
         return backendClient.recordAttendance(index, id, isExercise);
