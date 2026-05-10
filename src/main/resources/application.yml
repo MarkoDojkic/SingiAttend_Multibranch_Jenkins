@@ -11,7 +11,9 @@ spring:
   cloud:
     compatibility-verifier:
       enabled: false #Spring Boot 4.1.x not yet set as compatible with spring cloud 2025.1.1
-
+  threads:
+    virtual:
+      enabled: true
 management:
   endpoints:
     web:
@@ -36,6 +38,9 @@ management:
 server:
   servlet:
     context-path: ${APP_CONTEXT_PATH:}
+    session:
+      cookie:
+        path: / # Required when context-path is different in case of rewrites to keep SAML session cookie same
   port: ${PORT:62812}
   http2:
     enabled: true
@@ -56,6 +61,14 @@ mongo-host: ${MONGO_HOST:localhost:27017}
 allowed-origins: ${ALLOWED_ORIGINS}
 realm-name: ${REALM_NAME:singiattend-server}
 
+iam:
+  saml:
+    relayingParties: ${IAM_SAML_RELAYING_PARTIES}
+  ssl:
+    truststore:
+      path: classpath:saml/iam-truststore.p12
+      password: ${IAM_SSL_TRUSTSTORE_PASSWORD}
+      type: PKCS12
 ---
 spring:
   config:

@@ -103,7 +103,7 @@ pipeline {
                         def minor = versionParts[1].toInteger() + 1
                         def nextDevVersion = "${major}.${minor}.0-SNAPSHOT"
 
-                        withMaven(maven: 'Maven 4.0', jdk: 'JDK 25') {
+                        withMaven(maven: 'Maven 4.0', jdk: 'JDK 26') {
                             sh "mvn versions:set -DnewVersion=${nextDevVersion}"
                             sh "mvn versions:commit"
                         }
@@ -121,7 +121,7 @@ pipeline {
 
                     if (params.VERSION_ACTION == 'release') {
                         def releaseVersion = currentVersion.replace('-SNAPSHOT','')
-                        withMaven(maven: 'Maven 4.0', jdk: 'JDK 25') {
+                        withMaven(maven: 'Maven 4.0', jdk: 'JDK 26') {
                             sh "mvn versions:set -DnewVersion=${releaseVersion}"
                             sh "mvn versions:commit"
                         }
@@ -143,7 +143,7 @@ pipeline {
         stage('Build') {
             when { expression { !params.SKIP_BUILD } }
             steps {
-                withMaven(maven: 'Maven 4.0', jdk: 'JDK 25') {
+                withMaven(maven: 'Maven 4.0', jdk: 'JDK 26') {
                     sh 'mvn clean install -DskipTests -B'
                 }
             }
@@ -158,7 +158,7 @@ pipeline {
             }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'sonar-creds', usernameVariable: 'SONAR_USER', passwordVariable: 'SONAR_PASS')]) {
-                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 25') {
+                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 26') {
                         sh """
                             mvn sonar:sonar \
                               -Dsonar.projectKey=SingiAttend-Server-Jenkins \
@@ -182,7 +182,7 @@ pipeline {
                     def pom = readMavenPom file: 'pom.xml'
                     def deployUrl = pom.version.endsWith("SNAPSHOT") ? NEXUS_SNAPSHOT_URL : NEXUS_RELEASE_URL
 
-                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 25') {
+                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 26') {
                         sh """
                             mvn deploy \
                                 -Dnexus.url=${deployUrl}
@@ -262,7 +262,7 @@ pipeline {
         stage('Cleanup') {
             steps {
                 echo "Cleaning build files..."
-                withMaven(maven: 'Maven 4.0', jdk: 'JDK 25') {
+                withMaven(maven: 'Maven 4.0', jdk: 'JDK 26') {
                     sh 'mvn clean -B'
                 }
                 sh 'rm -rf target/*'

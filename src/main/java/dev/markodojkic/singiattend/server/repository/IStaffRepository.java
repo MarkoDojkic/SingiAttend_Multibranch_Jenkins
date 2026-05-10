@@ -1,6 +1,7 @@
 package dev.markodojkic.singiattend.server.repository;
 
 import dev.markodojkic.singiattend.server.entity.Staff;
+import org.springframework.data.mongodb.repository.Aggregation;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -13,6 +14,12 @@ import java.util.Optional;
 public interface IStaffRepository extends MongoRepository<Staff, String> {
     @Query(value="{'email': {$regex : ?0, $options: 'i'}}")
     Optional<Staff> getByEmail(String email);
+
+    @Aggregation(pipeline = {
+            "{ $match: { '_id': { $oid: ?0 } } }",
+            "{ $project: { role: 1 } }"
+    })
+    Optional<String> getRoleById(String id);
 
     List<Staff> findAllByRole(String role);
 }

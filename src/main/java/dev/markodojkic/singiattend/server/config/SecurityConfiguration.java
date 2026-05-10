@@ -45,11 +45,11 @@ public class SecurityConfiguration {
         configuration.setAllowCredentials(true); // Needed for cookies/auth
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration("/api/**", configuration);
         return source;
     }
 
-    @Bean
+    @Bean("mainSecurityFilterChain")
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         CsrfTokenRequestHandler tokenHandler = new XorCsrfTokenRequestAttributeHandler();
         CookieCsrfTokenRepository csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
