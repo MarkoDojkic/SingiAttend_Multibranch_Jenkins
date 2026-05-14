@@ -15,6 +15,7 @@
     <name>SingiAttend Student Proxy</name>
     <description>SingiAttend student proxy for mobile applications</description>
     <properties>
+        <nexus.base.url>https://nexus.markodojkic.qzz.io</nexus.base.url>
         <java.version>26</java.version>
         <mapstruct.version>1.7.0.Beta1</mapstruct.version>
         <lombok.version>1.18.46</lombok.version>
@@ -135,7 +136,7 @@
         <repository>
             <id>nexus-public</id>
             <name>Nexus Public Proxy</name>
-            <url>https://nexus.markodojkic.local/repository/maven-public/</url>
+            <url>${nexus.base.url}/repository/maven-public/</url>
             <releases>
                 <enabled>true</enabled>
                 <updatePolicy>daily</updatePolicy>
@@ -147,7 +148,7 @@
         <repository>
             <id>nexus-snapshots</id>
             <name>Nexus Snapshot Repository</name>
-            <url>https://nexus.markodojkic.local/repository/maven-snapshots/</url>
+            <url>${nexus.base.url}/repository/maven-snapshots/</url>
             <releases>
                 <enabled>false</enabled>
             </releases>
@@ -160,9 +161,9 @@
 
     <pluginRepositories>
         <pluginRepository>
-            <id>nexus-central</id>
-            <name>Nexus Central Proxy</name>
-            <url>https://nexus.markodojkic.local/repository/maven-central/</url>
+            <id>nexus-public</id>
+            <name>Nexus Public Proxy</name>
+            <url>${nexus.base.url}/repository/maven-public/</url>
             <releases>
                 <enabled>true</enabled>
                 <updatePolicy>daily</updatePolicy>
@@ -171,16 +172,28 @@
                 <enabled>false</enabled>
             </snapshots>
         </pluginRepository>
+        <pluginRepository>
+            <id>nexus-snapshots</id>
+            <name>Nexus Snapshot Repository</name>
+            <url>${nexus.base.url}/repository/maven-snapshots/</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+            </snapshots>
+        </pluginRepository>
     </pluginRepositories>
 
     <distributionManagement>
         <repository>
             <id>nexus-releases</id>
-            <url>https://nexus.markodojkic.local/repository/maven-releases/</url>
+            <url>${nexus.base.url}/repository/maven-releases/</url>
         </repository>
         <snapshotRepository>
             <id>nexus-snapshots</id>
-            <url>https://nexus.markodojkic.local/repository/maven-snapshots/</url>
+            <url>${nexus.base.url}/repository/maven-snapshots/</url>
         </snapshotRepository>
     </distributionManagement>
 
@@ -273,7 +286,7 @@
                                     <version>[3.9.9,)</version>
                                 </requireMavenVersion>
                                 <requireJavaVersion>
-                                    <version>[25,)</version>
+                                    <version>[26,)</version>
                                 </requireJavaVersion>
                                 <dependencyConvergence/>
                                 <banDuplicatePomDependencyVersions/>

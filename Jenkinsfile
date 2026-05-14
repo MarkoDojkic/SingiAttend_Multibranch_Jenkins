@@ -1,31 +1,3 @@
-// === Helper: Git + GPG setup (Jenkins-safe) ===
-def setupGitConfig() {
-    sh '''
-        mkdir -p "$GPG_HOME"
-        chmod 700 "$GPG_HOME"
-
-        # Git config with Unicode name and GPG signing
-        git config --global user.name "Марко Дојкић"
-        git config --global user.email "marko.dojkic@gmail.com"
-        git config --global user.signingkey ''' + env.GPG_KEY_ID + '''
-        git config --global commit.gpgsign true
-        git config --global tag.gpgsign true
-
-        # Configure GPG program and format
-        git config --global gpg.program "$(which gpg)"
-        git config --global gpg.format openpgp
-
-        # Create gpg.conf with non-interactive settings
-        echo "use-agent" > "$GPG_HOME/gpg.conf"
-        echo "pinentry-mode loopback" >> "$GPG_HOME/gpg.conf"
-        chmod 600 "$GPG_HOME/gpg.conf"
-
-        # Create gpg-agent.conf for Jenkins non-interactive use
-        echo 'export GPG_TTY=$(tty)' > "$GPG_HOME/gpg-agent.conf"
-        chmod 600 "$GPG_HOME/gpg-agent.conf"
-    '''
-}
-
 pipeline {
     agent any
 
@@ -38,80 +10,80 @@ pipeline {
     }
 
     environment {
-        NEXUS_RELEASE_URL = "https://nexus.markodojkic.local/repository/maven-releases/"
-        NEXUS_SNAPSHOT_URL = "https://nexus.markodojkic.local/repository/maven-snapshots/"
+        JOB_TMP_FOLDER = "/tmp/jenkins/${JOB_NAME}/${BUILD_NUMBER}"
         SONAR_URL = "https://sonar.markodojkic.local"
 
         GPG_KEY_ID = "F7CC88ED5C36404B4BA4B1FE039F7DC7EFE5D537"
-        GPG_HOME = "${WORKSPACE}/.gnupg"
-        PATH = "/usr/local/MacGPG2/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:${env.PATH}"
+        GPG_SCRIPT = "${JOB_TMP_FOLDER}/gpg-wrapper.sh"
+        PATH = "/usr/local/bin:/usr/bin:${env.PATH}"
 
         DOCKER_IMAGE_NAME = "singiattend-student-proxy"
-        NEXUS_DOCKER_URL = "markodojkic.local:5001"
+        NEXUS_DOCKER_URL = "nexus.markodojkic.local"
         DOCKER_BUILDKIT = '1'
     }
 
     parameters {
-        booleanParam(name: 'SKIP_BUILD', defaultValue: false, description: 'Skip the entire build process')
-        booleanParam(name: 'SKIP_DEPLOY', defaultValue: false, description: 'Skip deployment to Nexus')
+        booleanParam(name: 'SKIP_BUILD', defaultValue: false, description: 'Skip Maven build')
+        booleanParam(name: 'SKIP_DEPLOY', defaultValue: false, description: 'Skip Maven deployment to Nexus')
         booleanParam(name: 'SKIP_DOCKER', defaultValue: false, description: 'Skip Docker build')
         booleanParam(name: 'SKIP_DOCKER_DEPLOY', defaultValue: false, description: 'Skip Docker deployment to Nexus')
         booleanParam(name: 'RUN_SONAR', defaultValue: false, description: 'Run SonarQube analysis')
-        choice(name: 'VERSION_ACTION', choices: ['none', 'bump-development', 'release'], description: 'Versioning action')
+        credentials(
+            name: 'SONAR_CREDENTIALS_ID',
+            defaultValue: '',
+            description: 'Select Sonar token credential',
+            credentialType: 'org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl'
+        )
+        choice(name: 'VERSION_ACTION', choices: ['none', 'bump-patch', 'bump-minor', 'bump-major', 'release'], description: 'Versioning action')
         booleanParam(name: 'TAG_THIS_BUILD', defaultValue: false, description: 'Create Git tag')
     }
 
     stages {
-
-        stage('Check Skip Options') {
-            when { expression { params.SKIP_BUILD } }
-            steps {
-                echo "Build skipped as requested."
-                script { currentBuild.result = 'SUCCESS' }
-            }
-        }
-
         stage('Setup GPG') {
             steps {
                 script {
-                    withCredentials([file(credentialsId: 'gpg-secret-key', variable: 'GPG_KEY_FILE')]) {
-                        sh '''
-                            mkdir -p "$GPG_HOME"
-                            chmod 700 "$GPG_HOME"
+                    withCredentials([
+                        file(credentialsId: 'gpg-secret-key', variable: 'GPG_KEY_FILE'),
+                        string(credentialsId: 'gpg-passphrase', variable: 'GPG_PASSPHRASE')
+                    ]) {
+                        sh """
+                            set +x
+                            export GNUPGHOME="${JOB_TMP_FOLDER}/.gnupg"
 
-                            if [ ! -f "$GPG_HOME/pubring.kbx" ] || ! gpg --homedir "$GPG_HOME" --list-keys "${env.GPG_KEY_ID}" &>/dev/null; then
-                                echo "Importing GPG key..."
-                                gpg --batch --homedir "$GPG_HOME" --import "$GPG_KEY_FILE"
-                                echo "''' + env.GPG_KEY_ID + ''':6:" | gpg --homedir "$GPG_HOME" --import-ownertrust
-                            else
-                                echo "GPG key ${env.GPG_KEY_ID} already exists, skipping import"
-                            fi
+                            mkdir -p "\$GNUPGHOME"
+                            chmod 700 "\$GNUPGHOME"
 
-                            echo "=== GPG Keys ==="
-                            gpg --homedir "$GPG_HOME" --list-secret-keys --keyid-format LONG
-                        '''
-                        setupGitConfig()
+                            tr -d '\\r' < "${GPG_KEY_FILE}" > "${GPG_KEY_FILE}.fixed"
+                            mv "${GPG_KEY_FILE}.fixed" "${GPG_KEY_FILE}"
 
-                        sh '''
-                            echo "=== Git GPG Config ==="
-                            git config --global --list | grep -E "user|gpg|sign" || true
-                        '''
+                            gpgconf --kill gpg-agent || true
+
+                            gpg --batch --import "${GPG_KEY_FILE}"
+
+                            printf '%s\n' \
+                            '#!/bin/bash' \
+                            'export GNUPGHOME="'"${JOB_TMP_FOLDER}"'/.gnupg"' \
+                            'exec gpg --batch --yes --pinentry-mode loopback --passphrase "'"${GPG_PASSPHRASE}"'" "\$@"' \
+                            > "${GPG_SCRIPT}"
+
+                            chmod 755 "${GPG_SCRIPT}"
+                            set -x
+                        """
                     }
                 }
             }
         }
 
-        stage('Checkout & Setup Git') {
+        stage('Checkout Git project') {
             steps {
                 checkout([
                         $class: 'GitSCM',
                         branches: [[name: "refs/heads/${env.BRANCH_NAME}"]],
                         userRemoteConfigs: [[
-                                                    url: 'https://github.com/MarkoDojkic/SingiAttend_Multibranch_Jenkins.git',
-                                                    credentialsId: 'github-creds'
-                                            ]]
+                            url: 'https://github.com/MarkoDojkic/SingiAttend_Multibranch_Jenkins.git',
+                            credentialsId: 'github-creds'
+                        ]]
                 ])
-                sh "git checkout -B ${env.BRANCH_NAME} origin/${env.BRANCH_NAME} || true"
             }
         }
 
@@ -134,28 +106,55 @@ pipeline {
                     def currentVersion = pom.version
                     def nextVersion = ''
 
-                    if (params.VERSION_ACTION == 'bump-development') {
-                        def parts = currentVersion.replace('-SNAPSHOT','').tokenize('.')
-                        if (parts.size() < 3) parts = [1,0,0]
-                        def patch = parts[2].toInteger() + 1
-                        nextVersion = "${parts[0]}.${parts[1]}.${patch}-SNAPSHOT"
-                    } else if (params.VERSION_ACTION == 'release') {
-                        nextVersion = currentVersion.replace('-SNAPSHOT','')
+                    def versionCore = currentVersion.replace('-SNAPSHOT','')
+                    def parts = versionCore.tokenize('.').collect { it.toInteger() }
+                    if (parts.size() < 3) parts = [1,0,0]
+
+                    switch(params.VERSION_ACTION) {
+                        case 'bump-patch':
+                            parts[2] = parts[2] + 1
+                            nextVersion = "${parts[0]}.${parts[1]}.${parts[2]}-SNAPSHOT"
+                            break
+                        case 'bump-minor':
+                            parts[1] = parts[1] + 1
+                            parts[2] = 0
+                            nextVersion = "${parts[0]}.${parts[1]}.${parts[2]}-SNAPSHOT"
+                            break
+                        case 'bump-major':
+                            parts[0] = parts[0] + 1
+                            parts[1] = 0
+                            parts[2] = 0
+                            nextVersion = "${parts[0]}.${parts[1]}.${parts[2]}-SNAPSHOT"
+                            break
+                        case 'release':
+                            nextVersion = versionCore
+                            break
+                        default:
+                            nextVersion = currentVersion
+                            echo "No version change"
                     }
 
                     echo "New version: ${nextVersion}"
 
                     withMaven(maven: 'Maven 4.0', jdk: 'JDK 26') {
                         sh """
-                            mvn versions:set -DnewVersion=${nextVersion}
-                            mvn versions:commit
+                            mvn versions:set -B -DnewVersion=${nextVersion} -Dnexus.base.url=https://nexus.markodojkic.local -Dmaven.repo.local=${WORKSPACE}/.m2
+                            mvn versions:commit -B -Dnexus.base.url=https://nexus.markodojkic.local -Dmaven.repo.local=${WORKSPACE}/.m2
                         """
                     }
-
                     sh """
                         git add pom.xml
-                        git commit -S -m "chore: bump version to ${nextVersion}" || echo 'No version changes to commit'
-                        git push origin HEAD:${env.BRANCH_NAME} || true
+                        set +x
+
+                        git -c user.name="Марко Дојкић" \
+                            -c user.email="marko.dojkic@gmail.com" \
+                            -c commit.gpgsign=true \
+                            -c gpg.format=openpgp \
+                            -c gpg.program="${GPG_SCRIPT}" \
+                            commit -S -m "chore: bump version to ${nextVersion}"
+
+                        set -x
+                        git push origin HEAD:${env.BRANCH_NAME}
                     """
                 }
             }
@@ -165,7 +164,7 @@ pipeline {
             when { expression { !params.SKIP_BUILD } }
             steps {
                 withMaven(maven: 'Maven 4.0', jdk: 'JDK 26') {
-                    sh 'mvn clean install -DskipTests -B'
+                    sh "mvn clean install -DskipTests -U -B -Dnexus.base.url=https://nexus.markodojkic.local -Dmaven.repo.local=${WORKSPACE}/.m2"
                 }
             }
         }
@@ -178,14 +177,21 @@ pipeline {
                 }
             }
             steps {
-                withCredentials([usernamePassword(credentialsId: 'sonar-creds', usernameVariable: 'SONAR_USER', passwordVariable: 'SONAR_PASS')]) {
-                    withMaven(maven: 'Maven 4.0', jdk: 'JDK 26') {
-                        sh """
-                            mvn sonar:sonar \
-                                -Dsonar.projectKey=SingiAttend-Server-Jenkins \
-                                -Dsonar.host.url=${SONAR_URL} \
-                                -Dsonar.login=\$SONAR_PASS
-                        """
+                script {
+                    if (!params.SONAR_CREDENTIALS_ID?.trim()) {
+                        error("SONAR_CREDENTIALS_ID is required when RUN_SONAR is enabled.")
+                    }
+                    withCredentials([string(credentialsId: 'SONAR_CREDENTIALS_ID', variable: 'SONAR_TOKEN')]) {
+                        withMaven(maven: 'Maven 4.0', jdk: 'JDK 26') {
+                            sh """
+                                mvn -B sonar:sonar \
+                                    -Dsonar.projectKey=SingiAttend-Server-Jenkins \
+                                    -Dsonar.host.url=${SONAR_URL} \
+                                    -Dsonar.token=${SONAR_TOKEN} \
+                                    -Dnexus.base.url=https://nexus.markodojkic.local \
+                                    -Dmaven.repo.local=${WORKSPACE}/.m2
+                            """
+                        }
                     }
                 }
             }
@@ -201,17 +207,21 @@ pipeline {
             steps {
                 script {
                     def pom = readMavenPom file: 'pom.xml'
-                    def deployUrl = pom.version.endsWith("SNAPSHOT") ? NEXUS_SNAPSHOT_URL : NEXUS_RELEASE_URL
 
                     withMaven(maven: 'Maven 4.0', jdk: 'JDK 26') {
-                        sh "mvn deploy -Dnexus.url=${deployUrl}"
+                        sh "mvn deploy -B -Dnexus.base.url=https://nexus.markodojkic.local -Dmaven.repo.local=${WORKSPACE}/.m2"
                     }
                 }
             }
         }
 
         stage('Build Docker Image') {
-            when { expression { !params.SKIP_DOCKER } }
+            when {
+                allOf {
+                    expression { !params.SKIP_BUILD }
+                    expression { !params.SKIP_DOCKER }
+                }
+            }
             steps {
                 script {
                     def pom = readMavenPom file: 'pom.xml'
@@ -219,11 +229,11 @@ pipeline {
 
                     withCredentials([usernamePassword(credentialsId: 'nexus-creds', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
                         sh """
-                            echo \$NEXUS_PASS | docker login ${NEXUS_DOCKER_URL} -u \$NEXUS_USER --password-stdin
-                            docker pull ${NEXUS_DOCKER_URL}/${DOCKER_IMAGE_NAME}:latest || true
+                            echo ${NEXUS_PASS} | docker login ${NEXUS_DOCKER_URL} -u ${NEXUS_USER} --password-stdin
+                            docker pull ${NEXUS_DOCKER_URL}/docker-colima-local/${DOCKER_IMAGE_NAME}:latest || true
 
                             DOCKER_BUILDKIT=1 docker build \
-                                --cache-from ${NEXUS_DOCKER_URL}/${DOCKER_IMAGE_NAME}:latest \
+                                --cache-from ${NEXUS_DOCKER_URL}/docker-colima-local/${DOCKER_IMAGE_NAME}:latest \
                                 --build-arg VERSION=${pom.version} \
                                 -t ${DOCKER_IMAGE_NAME}:${pom.version} \
                                 -t ${DOCKER_IMAGE_NAME}:latest .
@@ -234,20 +244,33 @@ pipeline {
         }
 
         stage('Push Docker Image to Nexus') {
-            when { expression { !params.SKIP_DOCKER_DEPLOY } }
+            when {
+                allOf {
+                    expression { !params.SKIP_BUILD }
+                    expression { !params.SKIP_DOCKER }
+                    expression { !params.SKIP_DOCKER_DEPLOY }
+                }
+            }
             steps {
                 script {
                     def pom = readMavenPom file: 'pom.xml'
                     withCredentials([usernamePassword(credentialsId: 'nexus-creds', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
                         sh """
-                            echo \$NEXUS_PASS | docker login ${NEXUS_DOCKER_URL} -u \$NEXUS_USER --password-stdin
-                            docker tag ${DOCKER_IMAGE_NAME}:${pom.version} ${NEXUS_DOCKER_URL}/${DOCKER_IMAGE_NAME}:${pom.version}
-                            docker tag ${DOCKER_IMAGE_NAME}:latest ${NEXUS_DOCKER_URL}/${DOCKER_IMAGE_NAME}:latest
-                            docker push ${NEXUS_DOCKER_URL}/${DOCKER_IMAGE_NAME}:${pom.version}
-                            docker push ${NEXUS_DOCKER_URL}/${DOCKER_IMAGE_NAME}:latest
+                            echo ${NEXUS_PASS} | docker login ${NEXUS_DOCKER_URL} -u ${NEXUS_USER} --password-stdin
+                            docker tag ${DOCKER_IMAGE_NAME}:${pom.version} ${NEXUS_DOCKER_URL}/docker-colima-local/${DOCKER_IMAGE_NAME}:${pom.version}
+                            docker tag ${DOCKER_IMAGE_NAME}:latest ${NEXUS_DOCKER_URL}/docker-colima-local/${DOCKER_IMAGE_NAME}:latest
+                            docker push ${NEXUS_DOCKER_URL}/docker-colima-local/${DOCKER_IMAGE_NAME}:${pom.version}
+                            docker push ${NEXUS_DOCKER_URL}/docker-colima-local/${DOCKER_IMAGE_NAME}:latest
                             docker logout ${NEXUS_DOCKER_URL}
                         """
                     }
+
+                    sh """
+                        docker rmi -f ${DOCKER_IMAGE_NAME}:${pom.version} \
+                        ${DOCKER_IMAGE_NAME}:latest \
+                        ${NEXUS_DOCKER_URL}/docker-colima-local/${DOCKER_IMAGE_NAME}:${pom.version} \
+                        ${NEXUS_DOCKER_URL}/docker-colima-local/${DOCKER_IMAGE_NAME}:latest || true
+                    """
                 }
             }
         }
@@ -257,52 +280,42 @@ pipeline {
             steps {
                 script {
                     def pom = readMavenPom file: 'pom.xml'
-                    def version = pom.version
-                    setupGitConfig()
-
                     sh """
-                        git fetch --tags --force
-                        git tag -d ${version} 2>/dev/null || true
-                        git push origin :refs/tags/${version} 2>/dev/null || true
-
-                        unset GIT_CONFIG_PARAMETERS
-                        git config --local user.signingkey ${GPG_KEY_ID}
-
-                        /usr/bin/git -c user.signingkey=${GPG_KEY_ID} tag \
-                            -s -u ${GPG_KEY_ID} \
-                            -m "Release singiattend/student-proxy:${version} (branch: ${env.BRANCH_NAME})" \
-                            singiattend-student-proxy-${version}
-
+                        git fetch --tags --force |
+                        set +x
+                        git -c user.name="Марко Дојкић" \
+                            -c user.email="marko.dojkic@gmail.com" \
+                            -c commit.gpgsign=true \
+                            -c gpg.program="${GPG_SCRIPT}" \
+                            -c gpg.format=openpgp \
+                            tag -s \
+                            -u ${GPG_KEY_ID} \
+                            -m "Release singiattend/student-proxy:${pom.version} (branch: ${env.BRANCH_NAME})" \
+                            singiattend-student-proxy-${pom.version}
+                        set -x
                         echo "Verifying tag..."
-                        git verify-tag -v singiattend-student-proxy-${version}
+                        git -c gpg.program="${GPG_SCRIPT}" verify-tag -v singiattend-student-proxy-${pom.version}
                         echo "Pushing tag..."
-                        git push origin singiattend-student-proxy-${version}
+                        git push origin singiattend-student-proxy-${pom.version}
                     """
                 }
-            }
-        }
-
-        stage('Cleanup') {
-            steps {
-                withMaven(maven: 'Maven 4.0', jdk: 'JDK 26') {
-                    sh 'mvn clean -B'
-                }
-                cleanWs(deleteDirs: true, notFailBuild: true)
             }
         }
     }
 
     post {
-        success { 
-            echo "✅ Build and deployment completed successfully!" 
-            cleanWs(deleteDirs: true, notFailBuild: true)
+        success {
+            echo "✅ Build and deployment completed successfully!"
         }
-        failure { 
-            echo "❌ Build failed!" 
-            cleanWs(deleteDirs: true, notFailBuild: true)
+        failure {
+            echo "❌ Build failed!"
         }
-        cleanup {
-            // Ensure workspace is always cleaned up, even if build is aborted
+        always {
+            sh """
+                set +x
+                rm -rf "${JOB_TMP_FOLDER}"
+                set -x
+            """
             cleanWs(deleteDirs: true, notFailBuild: true)
         }
     }
