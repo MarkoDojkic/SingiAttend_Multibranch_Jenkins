@@ -11,6 +11,9 @@ spring:
   cloud:
     compatibility-verifier:
       enabled: false #Spring Boot 4.1.x not yet set as compatible with spring cloud 2025.1.1
+    openfeign:
+      http2client:
+        enabled: true
   threads:
     virtual:
       enabled: true
@@ -78,8 +81,15 @@ spring:
     kubernetes:
       discovery:
         enabled: true
+        primary-port-name: 'https'
+        known-secure-ports: ${PORT:62812}
       client:
         namespace: ${KUBERNETES_NAMESPACE:default}
+      loadbalancer:
+        port-name: 'https'
+        mode: SERVICE
+app:
+  self-url: https://${APP_NAME}:${PORT}/${APP_CONTEXT_PATH:}
 ---
 spring:
   config:
@@ -89,3 +99,5 @@ spring:
     kubernetes:
       discovery:
         enabled: false
+app:
+  self-url: https://localhost:${PORT}/${APP_CONTEXT_PATH:}

@@ -1,4 +1,4 @@
-package dev.markodojkic.singiattend.server.config;
+package dev.markodojkic.singiattend.server.auth;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
