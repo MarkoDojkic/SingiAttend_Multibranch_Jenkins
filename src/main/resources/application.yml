@@ -79,7 +79,7 @@ spring:
       discovery:
         enabled: true
         primary-port-name: 'https'
-        known-secure-ports: 62812
+        known-secure-ports: ${PORT:62814},${FEIGN_CLIENT_PORT:62812}
       client:
         namespace: ${KUBERNETES_NAMESPACE:default}
       loadbalancer:

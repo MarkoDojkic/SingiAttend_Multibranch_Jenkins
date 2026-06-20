@@ -44,24 +44,26 @@ public class StudentPostLoginRedirectStrategy implements PostLoginRedirectStrate
         HashMap<String, String> payloadMap = new HashMap<>();
         payloadMap.put("id", id);
         payloadMap.put("proxyIdentifier", Objects.requireNonNull(authentication.getCredentials()).getFirstAttribute("singiattend_proxy_identifier"));
-        payloadMap.putAll(loginStudent(id, payloadMap.get("proxyIdentifier")));
+        payloadMap.putAll(loginStudent(id, payloadMap.get("proxyIdentifier"), authentication.getSaml2Response()));
 
         String payload = Base64.getUrlEncoder().encodeToString(new JSONObject(payloadMap).toString().getBytes(StandardCharsets.UTF_8));
 
         return postLoginRedirect + "saml/callback?userContext=" + payload;
     }
 
-    private Map<String, String> loginStudent(String id, String proxyIdentifier) {
+    private Map<String, String> loginStudent(String id, String proxyIdentifier, String saml2Response) {
         HttpServletRequest originalRequest = ((ServletRequestAttributes) Objects.requireNonNull(RequestContextHolder.getRequestAttributes())).getRequest();
 
         originalRequest.setAttribute("X-Tenant-Id", proxyIdentifier);
-        originalRequest.setAttribute("Authorization", "Basic " + new String(Base64.getEncoder().encode(("singiattend-admin:" + backendPassword).getBytes())));
+        originalRequest.setAttribute("Authorization", "Basic " + new String(Base64.getEncoder().encode((backendUsername + ":" + backendPassword).getBytes())));
 
         try {
-            var csrfResponse = studentProxyController.csrfLogin(originalRequest);
+            var csrfResponse = studentProxyController.csrfLogin(id, saml2Response, originalRequest, "StudentPostLoginRedirectStrategy");
 
             if (!csrfResponse.getStatusCode().is2xxSuccessful()) {
                 throw new IllegalStateException("CSRF token not received from backend for student " + id);
+            } else if(csrfResponse.getBody() == null) {
+                throw new IllegalStateException("Unexpected response body type from backend CSRF login for student " + id);
             }
 
             log.debug("CSRF token obtained for student {}: tokenName={}, token={}", id, csrfResponse.getBody().getHeaderName(), csrfResponse.getBody().getToken());
@@ -92,7 +94,11 @@ public class StudentPostLoginRedirectStrategy implements PostLoginRedirectStrate
                     .filter(cookie -> cookie.startsWith("XSRF-TOKEN="))
                     .map(cookie -> cookie.substring("XSRF-TOKEN=".length()).split(";")[0])
                     .findFirst()
-                    .orElse(""), "csrfHeaderName", csrfResponse.getBody().getHeaderName(), "csrfToken", csrfResponse.getBody().getToken(), "studentName", studentName, "status", studentName.isEmpty() ? "INVALID" : "VALID");
+                    .orElse(""),
+                    "csrfParameterName", csrfResponse.getBody().getParameterName(),
+                    "csrfHeaderName", csrfResponse.getBody().getHeaderName(),
+                    "csrfToken", csrfResponse.getBody().getToken(),
+                    "studentName", studentName, "status", studentName.isEmpty() ? "INVALID" : "VALID");
         } catch (Exception e) {
             throw new IllegalStateException("Failed to validate student " + id + ": " + e.getMessage(), e);
         }

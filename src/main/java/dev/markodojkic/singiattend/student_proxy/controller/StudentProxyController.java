@@ -7,6 +7,7 @@ import dev.markodojkic.singiattend.student_proxy.model.StudentDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.web.csrf.DefaultCsrfToken;
 import org.springframework.web.bind.annotation.*;
@@ -23,10 +24,33 @@ public class StudentProxyController {
     }
 
     @GetMapping("/csrfLogin")
-    public ResponseEntity<DefaultCsrfToken> csrfLogin(HttpServletRequest request) {
-        String clientIp = getClientIp(request);
-        logger.info("CSRF login requested from IP: {}", clientIp);
-        return backendClient.csrfLogin();
+    public ResponseEntity<DefaultCsrfToken> csrfLogin(@RequestParam("loginFor") String loginFor, @RequestBody(required = false) String samlLoginResponse, HttpServletRequest request, @RequestHeader(value = "User-Agent", required = false) String device) {
+        logCall(request, loginFor, device, "csrfLogin");
+
+        // Call backend and filter out hop-by-hop headers that must not be proxied
+        ResponseEntity<DefaultCsrfToken> resp = backendClient.csrfLogin(loginFor, samlLoginResponse);
+
+        // Build filtered headers to avoid duplicating Transfer-Encoding / Connection etc.
+        org.springframework.http.HttpHeaders filtered = new org.springframework.http.HttpHeaders();
+        resp.getHeaders().forEach((name, values) -> {
+            String lower = name.toLowerCase(java.util.Locale.ROOT);
+            // skip hop-by-hop headers that should not be forwarded as-is
+            if ("transfer-encoding".equals(lower) || "connection".equals(lower) || "keep-alive".equals(lower)) {
+                return;
+            }
+            filtered.put(name, values);
+        });
+
+        if(resp.getBody() instanceof DefaultCsrfToken token) {
+            return new ResponseEntity<>(new DefaultCsrfToken(
+                    token.getHeaderName(),
+                    token.getParameterName(),
+                    token.getToken()
+            ), filtered, resp.getStatusCode());
+        } else {
+            logger.error("Unexpected response body type from backend CSRF login: {}", resp.getBody());
+            return new ResponseEntity<>(null, filtered, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @PostMapping("/insert/student")
@@ -83,10 +107,16 @@ public class StudentProxyController {
     }
 
     @PostMapping("/csrfLogout")
-    public void csrfLogout(HttpServletRequest request) {
-        String clientIp = getClientIp(request);
-        logger.info("CSRF logout requested from IP: {}", clientIp);
+    public void csrfLogout(HttpServletRequest request, @RequestHeader(value = "User-Agent", required = false) String device) {
+        logCall(request, "", device, "csrfLogout");
         backendClient.csrfLogout();
+    }
+
+    @RequestMapping(path = "/invalidateSessionForUser/{username}", method = RequestMethod.OPTIONS)
+    public ResponseEntity<Void> invalidateUserSession(@PathVariable String username,  HttpServletRequest request, @RequestHeader(value = "User-Agent", required = false) String device) {
+        logCall(request, username, device, "invalidateSessionForUser");
+        backendClient.invalidateUserSession(username);
+        return ResponseEntity.ok().build();
     }
 
     private void logCall(HttpServletRequest request, String index, String device, String endpoint) {

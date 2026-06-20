@@ -7,10 +7,7 @@ import dev.markodojkic.singiattend.student_proxy.model.StudentDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.web.csrf.DefaultCsrfToken;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -23,8 +20,8 @@ import java.util.List;
 )
 public interface SingiAttendServerClient {
 
-    @GetMapping("/api/v1/csrfLogin")
-    ResponseEntity<DefaultCsrfToken> csrfLogin();
+    @PostMapping("/api/v1/csrfLogin")
+    ResponseEntity<DefaultCsrfToken> csrfLogin(@RequestParam("loginFor") String loginFor, @RequestBody(required = false) String samlLoginResponse);
 
     @PostMapping("/api/v1/insert/student")
     StudentDTO addNewStudent(@RequestBody StudentDTO newStudent);
@@ -50,4 +47,7 @@ public interface SingiAttendServerClient {
 
     @PostMapping("/api/v1/csrfLogout")
     void csrfLogout();
+
+    @RequestMapping(path = "/invalidateSessionForUser/{username}", method = RequestMethod.OPTIONS)
+    ResponseEntity<Void> invalidateUserSession(@PathVariable String username);
 }
