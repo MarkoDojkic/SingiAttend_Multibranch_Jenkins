@@ -36,7 +36,7 @@
         curl_setopt($server_request, CURLOPT_CUSTOMREQUEST, "POST");
         curl_setopt($server_request, CURLOPT_POSTFIELDS, $subjectData);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
-            "Authorization: Basic " . base64_encode(SERVER_USERNAME . ":" . SERVER_PASSWORD),
+            "Authorization: Basic " . base64_encode($_SESSION['loggedInId'] . ":"),
             "Content-Type: application/json",
             "X-Tenant-ID: " . $_SESSION["proxyIdentifier"],
             $_SESSION['CSRF_TOKEN_HEADER_NAME-' . $_SESSION["proxyIdentifier"]] . ": " . $_SESSION['CSRF_TOKEN_SECRET-' . $_SESSION["proxyIdentifier"]],

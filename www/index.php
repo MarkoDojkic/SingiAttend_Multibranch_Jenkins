@@ -33,40 +33,10 @@
                 $_SESSION['loggedInAs']   = $parsed['role'] ?? null;
                 $_SESSION['loggedInId']   = $parsed['id'] ?? null;
                 $_SESSION['proxyIdentifier'] = $parsed['proxyIdentifier'] ?? null;
-
-                // Perform server-side CSRF login to obtain JSESSIONID and CSRF token (replicates samlPostLogin.php)
-                $server_request = curl_init(SERVER_URL . "/api/v1/csrfLogin");
-
-                curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($server_request, CURLOPT_HEADER, true); // Capture headers
-                curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
-                    "Authorization: Basic " . base64_encode(SERVER_USERNAME . ":" . SERVER_PASSWORD),
-                    "X-Tenant-ID: " . $_SESSION["proxyIdentifier"]
-                ));
-                curl_setopt($server_request, CURLOPT_CAINFO, SSL_CERTIFICATE_PATH);
-                $response = curl_exec($server_request);
-
-                // Split headers and body
-                $header_size = curl_getinfo($server_request, CURLINFO_HEADER_SIZE);
-                $header = substr($response, 0, $header_size);
-                $body = json_decode(substr($response, $header_size), true);
-
-                // Extract JSESSIONID
-                preg_match('/set-cookie: JSESSIONID=([^;]+)/', $header, $jsessionMatches);
-                if (isset($jsessionMatches[1])) $_SESSION['JSESSIONID-' .  $_SESSION["proxyIdentifier"]] = $jsessionMatches[1];
-                else die(file_get_contents("error404.html"));
-
-                // Extract CSRF Token and CSRF secret
-                preg_match('/XSRF-TOKEN=([^;]+)/', $header, $xsrfMatches);
-                $csrfTokenSecret = $body['token'] ?? null;
-                if ($csrfTokenSecret && isset($xsrfMatches[1])) {
-                    $_SESSION['CSRF_TOKEN-' .  $_SESSION["proxyIdentifier"]] = $xsrfMatches[1];
-                    $_SESSION['CSRF_TOKEN_SECRET-' . $_SESSION["proxyIdentifier"]] = $csrfTokenSecret;
-                    $_SESSION['CSRF_TOKEN_HEADER_NAME-' . $_SESSION["proxyIdentifier"]] = $body['headerName'];
-                } else die(file_get_contents("error404.html"));
-
-                curl_close($server_request);
-
+                $_SESSION['JSESSIONID-' .  $_SESSION["proxyIdentifier"]] = $parsed['jSessionID'] ?? null;
+                $_SESSION['CSRF_TOKEN-' .  $_SESSION["proxyIdentifier"]] = $parsed[$parsed['csrfParameterName']] ?? null;
+                $_SESSION['CSRF_TOKEN_SECRET-' . $_SESSION["proxyIdentifier"]] = $parsed['csrfToken'] ?? null;
+                $_SESSION['CSRF_TOKEN_HEADER_NAME-' . $_SESSION["proxyIdentifier"]] = $parsed['csrfHeaderName'] ?? null;
                 $_SESSION['isSAMLogin'] = true;
 
                 // Redirect user to appropriate page based on role
@@ -213,7 +183,7 @@
         
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
-            "Authorization: Basic " . base64_encode(SERVER_USERNAME . ":" . SERVER_PASSWORD),
+            "Authorization: Basic " . base64_encode($_SESSION['loggedInId'] . ":"),
             "Content-Type: application/json",
             "X-Tenant-ID: " . $_SESSION["proxyIdentifier"],
             $_SESSION['CSRF_TOKEN_HEADER_NAME-' . $_SESSION["proxyIdentifier"]] . ": " . $_SESSION['CSRF_TOKEN_SECRET-' . $_SESSION["proxyIdentifier"]],
@@ -267,7 +237,7 @@
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
-            "Authorization: Basic " . base64_encode(SERVER_USERNAME . ":" . SERVER_PASSWORD),
+            "Authorization: Basic " . base64_encode($_SESSION['loggedInId'] . ":"),
             "Content-Type: application/json",
             "X-Tenant-ID: " . $_SESSION["proxyIdentifier"],
             $_SESSION['CSRF_TOKEN_HEADER_NAME-' . $_SESSION["proxyIdentifier"]] . ": " . $_SESSION['CSRF_TOKEN_SECRET-' . $_SESSION["proxyIdentifier"]],
@@ -289,7 +259,7 @@
                         
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
-            "Authorization: Basic " . base64_encode(SERVER_USERNAME . ":" . SERVER_PASSWORD),
+            "Authorization: Basic " . base64_encode($_SESSION['loggedInId'] . ":"),
             "Content-Type: application/json",
             "X-Tenant-ID: " . $_SESSION["proxyIdentifier"],
             $_SESSION['CSRF_TOKEN_HEADER_NAME-' . $_SESSION["proxyIdentifier"]] . ": " . $_SESSION['CSRF_TOKEN_SECRET-' . $_SESSION["proxyIdentifier"]],
@@ -347,7 +317,7 @@
         
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
-            "Authorization: Basic " . base64_encode(SERVER_USERNAME . ":" . SERVER_PASSWORD),
+            "Authorization: Basic " . base64_encode($_SESSION['loggedInId'] . ":"),
             "Content-Type: application/json",
             "X-Tenant-ID: " . $_SESSION["proxyIdentifier"],
             $_SESSION['CSRF_TOKEN_HEADER_NAME-' . $_SESSION["proxyIdentifier"]] . ": " . $_SESSION['CSRF_TOKEN_SECRET-' . $_SESSION["proxyIdentifier"]],
@@ -380,7 +350,7 @@
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
-            "Authorization: Basic " . base64_encode(SERVER_USERNAME . ":" . SERVER_PASSWORD),
+            "Authorization: Basic " . base64_encode($_SESSION['loggedInId'] . ":"),
             "Content-Type: application/json",
             "X-Tenant-ID: " . $_SESSION["proxyIdentifier"],
             $_SESSION['CSRF_TOKEN_HEADER_NAME-' . $_SESSION["proxyIdentifier"]] . ": " . $_SESSION['CSRF_TOKEN_SECRET-' . $_SESSION["proxyIdentifier"]],
@@ -425,7 +395,7 @@
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
-            "Authorization: Basic " . base64_encode(SERVER_USERNAME . ":" . SERVER_PASSWORD),
+            "Authorization: Basic " . base64_encode($_SESSION['loggedInId'] . ":"),
             "Content-Type: application/json",
             "X-Tenant-ID: " . $_SESSION["proxyIdentifier"],
             $_SESSION['CSRF_TOKEN_HEADER_NAME-' . $_SESSION["proxyIdentifier"]] . ": " . $_SESSION['CSRF_TOKEN_SECRET-' . $_SESSION["proxyIdentifier"]],
@@ -484,7 +454,7 @@
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
-            "Authorization: Basic " . base64_encode(SERVER_USERNAME . ":" . SERVER_PASSWORD),
+            "Authorization: Basic " . base64_encode($_SESSION['loggedInId'] . ":"),
             "Content-Type: application/json",
             "X-Tenant-ID: " . $_SESSION["proxyIdentifier"],
             $_SESSION['CSRF_TOKEN_HEADER_NAME-' . $_SESSION["proxyIdentifier"]] . ": " . $_SESSION['CSRF_TOKEN_SECRET-' . $_SESSION["proxyIdentifier"]],
@@ -535,7 +505,7 @@
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
-            "Authorization: Basic " . base64_encode(SERVER_USERNAME . ":" . SERVER_PASSWORD),
+            "Authorization: Basic " . base64_encode($_SESSION['loggedInId'] . ":"),
             "Content-Type: application/json",
             "X-Tenant-ID: " . $_SESSION["proxyIdentifier"],
             $_SESSION['CSRF_TOKEN_HEADER_NAME-' . $_SESSION["proxyIdentifier"]] . ": " . $_SESSION['CSRF_TOKEN_SECRET-' . $_SESSION["proxyIdentifier"]],
@@ -590,7 +560,7 @@
                 
         curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
-            "Authorization: Basic " . base64_encode(SERVER_USERNAME . ":" . SERVER_PASSWORD),
+            "Authorization: Basic " . base64_encode($_SESSION['loggedInId'] . ":"),
             "Content-Type: application/json",
             "X-Tenant-ID: " . $_SESSION["proxyIdentifier"],
             $_SESSION['CSRF_TOKEN_HEADER_NAME-' . $_SESSION["proxyIdentifier"]] . ": " . $_SESSION['CSRF_TOKEN_SECRET-' . $_SESSION["proxyIdentifier"]],
@@ -627,23 +597,23 @@
         header("WWW-Authenticate: Basic realm=\"Administrator panel\"");
         header("HTTP/1.0 401 Unauthorized");
         if (@$_SERVER['PHP_AUTH_USER'] === 'Administrator' && password_verify(@$_SERVER['PHP_AUTH_PW'], "$2y$10\$zeRF8YO1yIitpNMyuyHMpuYwBFRcPh96L6Bol0AE1wztZpiUfKU9S")){
+            $server_request = curl_init(SERVER_URL . "/api/v1/csrfLogin");
+            curl_setopt($server_request, CURLOPT_CUSTOMREQUEST, "POST");
+            curl_setopt($server_request, CURLOPT_POSTFIELDS, "loginFor=admin");
+            curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($server_request, CURLOPT_HEADER, true); //Capture headers
+            curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
+                    "Authorization: Basic " . base64_encode(SERVER_USERNAME . ":" . SERVER_PASSWORD)
+            ));
+            curl_setopt($server_request, CURLOPT_CAINFO, SSL_CERTIFICATE_PATH);
+            $response = curl_exec($server_request);
+
+            // Split headers and body
+            $header_size = curl_getinfo($server_request, CURLINFO_HEADER_SIZE);
+            $header = substr($response, 0, $header_size);
+            $body = json_decode(substr($response, $header_size), true);
+
             foreach(["SingidunumBG", "SingidunumNS", "SingidunumNIS"] as $proxyIdentifier){
-                $server_request = curl_init(SERVER_URL . "/api/v1/csrfLogin");
-
-                curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($server_request, CURLOPT_HEADER, true); //Capture headers
-                curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
-                    "Authorization: Basic " . base64_encode(SERVER_USERNAME . ":" . SERVER_PASSWORD),
-                    "X-Tenant-ID: " . $proxyIdentifier
-                ));
-                curl_setopt($server_request, CURLOPT_CAINFO, SSL_CERTIFICATE_PATH);
-                $response = curl_exec($server_request);
-
-                // Split headers and body
-                $header_size = curl_getinfo($server_request, CURLINFO_HEADER_SIZE);
-                $header = substr($response, 0, $header_size);
-                $body = json_decode(substr($response, $header_size), true);
-
                 // Extract JSESSIONID
                 preg_match('/set-cookie: JSESSIONID=([^;]+)/', $header, $jsessionMatches);
                 if (isset($jsessionMatches[1])) $_SESSION['JSESSIONID-' .  $proxyIdentifier] = $jsessionMatches[1];
@@ -657,10 +627,10 @@
                     $_SESSION['CSRF_TOKEN_SECRET-' . $proxyIdentifier] = $csrfTokenSecret;
                     $_SESSION['CSRF_TOKEN_HEADER_NAME-' . $proxyIdentifier] = $body['headerName'];
                 } else die(file_get_contents("error404.html"));
-
-                curl_close($server_request);
             }
+            curl_close($server_request);
 
+            $_SESSION['loggedInId'] = "admin";
             $_SESSION["loggedInAs"] = "admin";
             $_SESSION['loggedInUser'] = "Administrator";
             $_SERVER["PHP_AUTH_USER"] = null;

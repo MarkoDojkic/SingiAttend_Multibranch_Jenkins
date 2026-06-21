@@ -19,7 +19,8 @@
         if($password === null) $errors[] = "userNotFound";
         else {
             $server_request = curl_init(SERVER_URL . "/api/v1/csrfLogin");
-
+            curl_setopt($server_request, CURLOPT_CUSTOMREQUEST, "POST");
+            curl_setopt($server_request, CURLOPT_POSTFIELDS, "loginFor=" . $id);
             curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($server_request, CURLOPT_HEADER, true); //Capture headers
             curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
@@ -46,6 +47,7 @@
                 $_SESSION['CSRF_TOKEN-' .  $_POST["proxyIdentifier"]] = $xsrfMatches[1];
                 $_SESSION['CSRF_TOKEN_SECRET-' . $_POST["proxyIdentifier"]] = $csrfTokenSecret;
                 $_SESSION['CSRF_TOKEN_HEADER_NAME-' . $_POST["proxyIdentifier"]] = $body['headerName'];
+                $_SESSION['loggedInId'] = $id;
             } else die(file_get_contents("error404.html"));
 
             curl_close($server_request);
@@ -56,7 +58,7 @@
             curl_setopt($server_request, CURLOPT_CUSTOMREQUEST, "POST");  // Set request type to POST
             curl_setopt($server_request, CURLOPT_POSTFIELDS, $password);  // Send password in POST body
             curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
-                "Authorization: Basic " . base64_encode(SERVER_USERNAME . ":" . SERVER_PASSWORD),
+                "Authorization: Basic " . base64_encode($_SESSION['loggedInId'] . ":"),
                 "Content-Type: application/json",
                 "X-Tenant-ID: " . $_POST["proxyIdentifier"],
                 $_SESSION['CSRF_TOKEN_HEADER_NAME-' . $_POST["proxyIdentifier"]] . ": " . $_SESSION['CSRF_TOKEN_SECRET-' . $_POST["proxyIdentifier"]],
@@ -72,10 +74,10 @@
                 if (!str_contains($response, ":professor") && !str_contains($response, ":assistant")) {
                     $errors[] = "wrong_pass";
                     $server_request = curl_init(SERVER_URL . "/api/v1/csrfLogout");
-
+                    curl_setopt($server_request, CURLOPT_CUSTOMREQUEST, "POST");
                     curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
                     curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
-                        "Authorization: Basic " . base64_encode(SERVER_USERNAME . ":" . SERVER_PASSWORD),
+                        "Authorization: Basic " . base64_encode($_SESSION['loggedInId'] . ":"),
                         "X-Tenant-ID: " . $_POST['proxyIdentifier']
                     ));
                     curl_setopt($server_request, CURLOPT_CAINFO, SSL_CERTIFICATE_PATH);

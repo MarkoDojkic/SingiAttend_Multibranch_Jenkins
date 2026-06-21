@@ -179,7 +179,7 @@ metadata:
   namespace: nexus
 type: Opaque
 data:
-  BACKEND_USERNAME: c2luZ2lhdHRlbmQtYWRtaW4=
+  BACKEND_USERNAME: c2luZ2lhdHRlbmQtdXNlcg==
   BACKEND_PASSWORD: c2luZ2lhdHRlbmQtc3R1ZGVudF9zZXJ2ZXIyMDI1
 ---
 apiVersion: v1
