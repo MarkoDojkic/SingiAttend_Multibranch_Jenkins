@@ -9,6 +9,28 @@
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
         <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+        <script>
+            function invalidateSession() {
+                const username = prompt("Enter teacher/assistant ID or student index:");
+
+                if (username === null) {
+                    return;
+                }
+
+                const value = username.trim();
+
+                if (value.length === 0) {
+                    alert("Username is required.");
+                    return;
+                }
+
+                if (!confirm("Force logout '" + value + "'?")) {
+                    return;
+                }
+
+                window.location.href = "/static/core/invalidateSession.php?username=" + encodeURIComponent(value);
+            }
+        </script>
     </head>
     <body style="background-color: #d3fff8;">
         <?php
@@ -121,8 +143,15 @@
         $linkID = 1;
         $logoutHref = DIR_CORE . '/logout.php';
 
-        if($_SESSION["loggedInAs"] === null)
+        if($_SESSION["loggedInAs"] === null){
             $pageName = "home";
+            $links .= "<a class='navbar-brand mr-2 mr-md-2'
+                        style='font-size: 25px !important; margin-top: 0.8em; color: darkred;'
+                        href='#'
+                        onclick='invalidateSession(); return false;'>"
+                                        . $xml->navigation->invalidateSession .
+                                        "</a>";
+        }
         else {
             $pageName = $_SESSION["loggedInAs"];
             $links .= "<a class='navbar-brand mr-2 mr-md-2' style='font-size: 25px !important; margin-top: 0.8em; color: red;'
@@ -597,13 +626,14 @@
         header("WWW-Authenticate: Basic realm=\"Administrator panel\"");
         header("HTTP/1.0 401 Unauthorized");
         if (@$_SERVER['PHP_AUTH_USER'] === 'Administrator' && password_verify(@$_SERVER['PHP_AUTH_PW'], "$2y$10\$zeRF8YO1yIitpNMyuyHMpuYwBFRcPh96L6Bol0AE1wztZpiUfKU9S")){
-            $server_request = curl_init(SERVER_URL . "/api/v1/csrfLogin");
+            $server_request = curl_init(SERVER_URL . "/api/v1/csrfLogin?loginFor=admin");
             curl_setopt($server_request, CURLOPT_CUSTOMREQUEST, "POST");
-            curl_setopt($server_request, CURLOPT_POSTFIELDS, "loginFor=admin");
+            curl_setopt($server_request, CURLOPT_POSTFIELDS, "");
             curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($server_request, CURLOPT_HEADER, true); //Capture headers
             curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
-                    "Authorization: Basic " . base64_encode(SERVER_USERNAME . ":" . SERVER_PASSWORD)
+                    "Authorization: Basic " . base64_encode(SERVER_USERNAME . ":" . SERVER_PASSWORD),
+                    "Content-Type: application/xml"
             ));
             curl_setopt($server_request, CURLOPT_CAINFO, SSL_CERTIFICATE_PATH);
             $response = curl_exec($server_request);

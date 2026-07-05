@@ -140,6 +140,7 @@ data:
   PORT: "62811"
   MONGO_HOST: singiattend-mongo.nexus.svc.cluster.local
   MONGO_PORT: "27017"
+  KUBERNETES_NAMESPACE: nexus
   TENANTS: |
     [
       {"tenantId":"SingidunumBG","db":"SingiAttend_BG"},
@@ -165,6 +166,7 @@ data:
   FEIGN_CLIENT_NAME: singiattend-server
   FEIGN_CLIENT_PATH: server
   FEIGN_CONTEXT_ID: singiattend-server-client
+  FEIGN_CLIENT_PORT: "62811"
   IAM_SAML_RELAYING_PARTIES: |
     [
       {"metadataEndpoint":"http://keycloak.security.svc.cluster.local/realms/singiattend/protocol/saml/descriptor","host":"keycloak.k8s.markodojkic.local","isSSLEnabled":true,"entityId":"singiattend-student-local","wantAuthnRequestsSigned":true},

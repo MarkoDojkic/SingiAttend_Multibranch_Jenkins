@@ -18,14 +18,15 @@
     else {
         if($password === null) $errors[] = "userNotFound";
         else {
-            $server_request = curl_init(SERVER_URL . "/api/v1/csrfLogin");
+            $server_request = curl_init(SERVER_URL . "/api/v1/csrfLogin?loginFor=" . $id);
             curl_setopt($server_request, CURLOPT_CUSTOMREQUEST, "POST");
-            curl_setopt($server_request, CURLOPT_POSTFIELDS, "loginFor=" . $id);
+            curl_setopt($server_request, CURLOPT_POSTFIELDS, "");
             curl_setopt($server_request, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($server_request, CURLOPT_HEADER, true); //Capture headers
             curl_setopt($server_request, CURLOPT_HTTPHEADER, array(
                 "Authorization: Basic " . base64_encode(SERVER_USERNAME . ":" . SERVER_PASSWORD),
-                "X-Tenant-ID: " . $_POST["proxyIdentifier"]
+                "X-Tenant-ID: " . $_POST["proxyIdentifier"],
+                "Content-Type: application/xml",
             ));
             curl_setopt($server_request, CURLOPT_CAINFO, SSL_CERTIFICATE_PATH);
             $response = curl_exec($server_request);

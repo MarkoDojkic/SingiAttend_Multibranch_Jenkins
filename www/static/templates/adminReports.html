@@ -11,6 +11,7 @@
                     url: '{AJAX_URL}',
                     data: {'subjectId':selections[selections.selectedIndex].value}, 
                     success: function(result){
+                        document.querySelector("#barGraphExercises").style = "display: " + (result.charAt(result.length - 1) === "1" ? 'none;' : 'block;');
                         document.querySelector('#subjectInfo').innerHTML = result.slice(0, -1);
                     }
                 });
